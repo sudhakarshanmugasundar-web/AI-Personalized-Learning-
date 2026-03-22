@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Completed! – AI Personalized Learning</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-grad: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #1a1a3e 100%);
+      --accent: #6c63ff; --sky: #38bdf8;
+      --card-bg: rgba(255,255,255,0.06); --card-border: rgba(255,255,255,0.11);
+      --text: #ffffff; --text-muted: rgba(255,255,255,0.55);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: var(--bg-grad);
+      color: var(--text);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+      text-align: center;
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 400px; height: 400px; top: -100px; left: -100px; background: rgba(108,99,255,0.2); }
+    .orb-2 { width: 300px; height: 300px; bottom: -50px; right: -50px; background: rgba(56,189,248,0.15); }
+    
+    .card {
+      width: 100%; max-width: 600px;
+      background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border);
+      border-radius: 20px; padding: 60px 40px;
+      position: relative; z-index: 1;
+    }
+    .emoji { font-size: 5rem; margin-bottom: 20px; line-height: 1; }
+    h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 16px; color: var(--sky); }
+    p { font-size: 1.1rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 40px; }
+    
+    .btn-group { display: flex; gap: 16px; justify-content: center; }
+    .btn { padding: 14px 28px; border-radius: 12px; font-size: 1rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform 0.2s; display: inline-block; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #5a52e0); color: white; border: none; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.4); }
+    .btn-outline { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div><div class="orb orb-2"></div>
+  
+  <div class="card">
+    <div class="emoji">🎓</div>
+    <h1>Course Completed!</h1>
+    <p>Congratulations! You have mastered all levels of this course. Your hard work and dedication have paid off. Keep learning to achieve even more!</p>
+    
+    <div class="btn-group">
+      <a href="profile.html" class="btn btn-primary">View Dashboard</a>
+      <a href="courses.html" class="btn btn-outline">Explore More Courses</a>
+    </div>
+  </div>
+  <script src="chatbot.js"></script>
+</body>
+</html>

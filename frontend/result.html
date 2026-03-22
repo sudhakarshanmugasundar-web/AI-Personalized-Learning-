@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result – AI Personalized Learning</title>
+  <meta name="description" content="View your quiz result and personalized AI recommendation.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-grad: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #1a1a3e 100%);
+      --accent: #6c63ff;
+      --accent-light: #8b85ff;
+      --sky: #38bdf8;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --card-bg: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.11);
+      --text: #ffffff;
+      --text-muted: rgba(255,255,255,0.55);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: var(--bg-grad);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Orbs */
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px);
+      pointer-events: none; z-index: 0;
+      animation: drift 12s ease-in-out infinite;
+    }
+    .orb-1 { width: 500px; height: 500px; top: -150px; left: -100px;
+              background: radial-gradient(circle, rgba(108,99,255,0.3) 0%, transparent 70%); }
+    .orb-2 { width: 380px; height: 380px; bottom: -100px; right: -80px;
+              background: radial-gradient(circle, rgba(56,189,248,0.2) 0%, transparent 70%);
+              animation-direction: reverse; animation-duration: 14s; }
+    @keyframes drift {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      50%       { transform: translate(20px,-30px) scale(1.04); }
+    }
+
+    /* Header */
+    .page-header {
+      width: 100%; max-width: 580px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+      position: relative; z-index: 1;
+      animation: fadeDown 0.6s ease-out both;
+    }
+    .page-header a {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.875rem; font-weight: 600;
+      color: var(--text-muted); text-decoration: none;
+      transition: color 0.2s;
+    }
+    .page-header a:hover { color: var(--text); }
+    .page-header .user-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 100px; padding: 6px 14px;
+      font-size: 0.8rem; color: var(--text-muted);
+    }
+
+    /* Card */
+    .result-card {
+      width: 100%; max-width: 580px;
+      background: var(--card-bg);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--card-border);
+      border-radius: 26px;
+      padding: clamp(28px, 5vw, 48px);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+      position: relative; z-index: 1;
+      animation: fadeUp 0.7s ease-out both;
+      text-align: center;
+    }
+
+    /* Trophy / emoji */
+    .result-emoji {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+      display: block;
+      animation: bounceIn 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+      animation-delay: 0.2s;
+    }
+    @keyframes bounceIn {
+      from { opacity:0; transform: scale(0.3); }
+      to   { opacity:1; transform: scale(1); }
+    }
+
+    .result-title {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .result-sub {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 34px;
+    }
+
+    /* Score ring */
+    .score-section {
+      margin-bottom: 28px;
+    }
+    .score-ring-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .score-ring-svg {
+      transform: rotate(-90deg);
+    }
+    .score-ring-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.1);
+      stroke-width: 8;
+    }
+    .score-ring-fill {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1,0.64,1);
+    }
+    .score-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-unit {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .score-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Grade badge */
+    .grade-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      border-radius: 100px; padding: 7px 18px;
+      font-size: 0.875rem; font-weight: 700;
+      margin-bottom: 28px;
+      animation: fadeInUp 0.6s ease-out both;
+      animation-delay: 0.4s;
+    }
+    .grade-excellent { background: rgba(34,197,94,0.15);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
+    .grade-good      { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fde68a; }
+    .grade-needs     { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; }
+
+    /* Recommendation box */
+    .rec-box {
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 16px;
+      padding: 20px 22px;
+      text-align: left;
+      margin-bottom: 28px;
+      animation: fadeInUp 0.6s ease-out both;
+      animation-delay: 0.5s;
+    }
+    .rec-box-title {
+      font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--accent-light);
+      margin-bottom: 8px;
+    }
+    .rec-box-text {
+      font-size: 1rem; font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .rec-box-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    /* Detail row */
+    .detail-row {
+      display: flex; justify-content: space-evenly; flex-wrap: wrap;
+      gap: 12px; margin-bottom: 30px;
+    }
+    .detail-item {
+      flex: 1; min-width: 120px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px; padding: 14px;
+      text-align: center;
+    }
+    .detail-item .di-icon { font-size: 1.4rem; margin-bottom: 6px; display: block; }
+    .detail-item .di-value {
+      font-size: 1.1rem; font-weight: 800;
+      color: var(--text); display: block;
+    }
+    .detail-item .di-label {
+      font-size: 0.72rem; color: var(--text-muted);
+      font-weight: 500; margin-top: 2px; display: block;
+    }
+
+    /* Buttons */
+    .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { flex: 1; min-width: 140px; padding: 14px; border-radius: 12px;
+           font-size: 0.95rem; font-weight: 700; font-family: 'Inter', sans-serif;
+           cursor: pointer; border: none; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none;
+           display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #5a52e0); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.5); }
+    .btn-outline { background: rgba(255,255,255,0.07); color: var(--text);
+                   border: 1px solid rgba(255,255,255,0.14); }
+    .btn-outline:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+
+    /* Animations */
+    @keyframes fadeDown  { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp    { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInUp  { from { opacity:0; transform:translateY(14px);  } to { opacity:1; transform:translateY(0); } }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body { padding: 16px; justify-content: flex-start; padding-top: 30px; }
+      .result-card { padding: 24px 18px; border-radius: 20px; }
+      .btn-group { flex-direction: column; }
+      .btn { min-width: 100%; }
+    }
+    @media (min-width: 1024px) {
+      .result-card { padding: 54px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <a href="courses.html">← Back to Courses</a>
+    <a href="profile.html" style="text-decoration:none;">
+      <div class="user-badge">
+        <span>👤</span>
+        <span id="userName">Student</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Result Card -->
+  <div class="result-card">
+
+    <span class="result-emoji" id="resultEmoji">🏆</span>
+    <h1 class="result-title" id="resultTitle">Great Job!</h1>
+    <p class="result-sub" id="resultSub">Here's how you performed</p>
+
+    <!-- Score Ring -->
+    <div class="score-section">
+      <div class="score-ring-wrap">
+        <svg class="score-ring-svg" width="140" height="140" viewBox="0 0 140 140">
+          <circle class="score-ring-bg" cx="70" cy="70" r="58" />
+          <circle class="score-ring-fill" id="ringFill" cx="70" cy="70" r="58"
+                  stroke="url(#ringGrad)"
+                  stroke-dasharray="364.4"
+                  stroke-dashoffset="364.4" />
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#6c63ff"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="score-center">
+          <span class="score-value" id="scoreValue">0</span>
+          <span class="score-unit">/ 100</span>
+        </div>
+      </div>
+      <div class="score-label">Your Score</div>
+    </div>
+
+    <!-- Grade badge -->
+    <div class="grade-badge" id="gradeBadge"></div>
+
+    <!-- Recommendation -->
+    <div class="rec-box">
+      <div class="rec-box-title">🤖 AI Recommendation</div>
+      <div class="rec-box-text" id="recText">—</div>
+      <div class="rec-box-sub" id="recSub">—</div>
+    </div>
+
+    <!-- Details -->
+    <div class="detail-row">
+      <div class="detail-item">
+        <span class="di-icon">⏱️</span>
+        <span class="di-value">Excellent</span>
+        <span class="di-label">Speed</span>
+      </div>
+      <div class="detail-item">
+        <span class="di-icon">🎯</span>
+        <span class="di-value" id="accuracyVal">—</span>
+        <span class="di-label">Accuracy</span>
+      </div>
+      <div class="detail-item">
+        <span class="di-icon">🔥</span>
+        <span class="di-value" id="streakVal">1</span>
+        <span class="di-label">Quiz Streak</span>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-group">
+      <a href="levels.html" class="btn btn-primary" id="continueBtn">🚀 Continue Path</a>
+      <a href="login.html" class="btn btn-outline" id="logoutBtn">🔓 Sign Out</a>
+    </div>
+
+  </div>
+
+  <script>
+    // Show username
+    const user = localStorage.getItem('ailearn_user') || 'Student';
+    document.getElementById('userName').textContent = user;
+
+    // Auth guard
+    if (!localStorage.getItem('ailearn_loggedIn')) {
+      window.location.href = 'login.html';
+    }
+
+    const score = parseInt(localStorage.getItem('ailearn_score') || '0', 10);
+    const rec   = localStorage.getItem('ailearn_recommendation') || 'Keep learning!';
+    
+    const courseId = localStorage.getItem('ailearn_course') || 'java';
+    const currentLevel = parseInt(localStorage.getItem('ailearn_level') || '1', 10);
+    const courseNames = { 'java': 'Java Programming', 'python': 'Python Programming', 'english': 'Spoken English' };
+    document.getElementById('resultSub').textContent = `Here's how you performed in ${courseNames[courseId]}`;
+    
+    // Continue Path Logic
+    const nextLevel = currentLevel + 1;
+    const continueBtn = document.getElementById('continueBtn');
+    
+    let maxLevels = 5;
+    if (courseId === 'java') maxLevels = 7;
+    if (courseId === 'python') maxLevels = 6;
+    
+    if (score >= 70) { // Successfully completed
+        if (nextLevel > maxLevels) continueBtn.href = 'completion.html';
+        else continueBtn.href = `quiz.html?course=${courseId}&level=${nextLevel}`;
+    } else { // Needs review, stay on current level
+        continueBtn.href = `quiz.html?course=${courseId}&level=${currentLevel}`;
+        continueBtn.textContent = '🔁 Retry Level';
+    }
+
+    /* ── Populate score ── */
+    document.getElementById('accuracyVal').textContent = score + '%';
+
+    // Animate score counter
+    let current = 0;
+    const duration = 1200;
+    const step = duration / score;
+    function animateScore() {
+      if (current < score) {
+        current = Math.min(current + Math.ceil(score / 60), score);
+        document.getElementById('scoreValue').textContent = current;
+        setTimeout(animateScore, step);
+      }
+    }
+    setTimeout(animateScore, 400);
+
+    // Animate ring
+    const circumference = 364.4;
+    const offset = circumference - (score / 100) * circumference;
+    setTimeout(() => {
+      document.getElementById('ringFill').style.strokeDashoffset = offset;
+    }, 200);
+
+    /* ── Grade & emoji ── */
+    let emoji, title, sub, gradeBadge, gradeCls, recSub;
+    if (score >= 70) {
+      emoji = '🏆'; title = 'Excellent Work!'; sub = "You've mastered this topic!";
+      gradeBadge = '✅ Excellent'; gradeCls = 'grade-excellent';
+      recSub = "You're ready to advance — great understanding demonstrated.";
+    } else if (score >= 50) {
+      emoji = '👍'; title = 'Good Effort!'; sub = "You're on the right track.";
+      gradeBadge = '📈 Good'; gradeCls = 'grade-good';
+      recSub = "A bit more practice will solidify your understanding.";
+    } else {
+      emoji = '📚'; title = 'Keep Going!'; sub = "Review the topic and try again.";
+      gradeBadge = '🔁 Needs Review'; gradeCls = 'grade-needs';
+      recSub = "Don't worry — revisiting the fundamentals will help you improve.";
+    }
+
+    document.getElementById('resultEmoji').textContent  = emoji;
+    document.getElementById('resultTitle').textContent  = title;
+    
+    // Append the mastery message to the course info instead of overwriting
+    document.getElementById('resultSub').textContent    += " — " + sub;
+    
+    document.getElementById('recText').textContent      = rec;
+    document.getElementById('recSub').textContent       = recSub;
+
+    const badge = document.getElementById('gradeBadge');
+    badge.textContent = gradeBadge;
+    badge.className   = 'grade-badge ' + gradeCls;
+
+    /* ── Logout ── */
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('ailearn_loggedIn');
+      localStorage.removeItem('ailearn_user');
+      localStorage.removeItem('ailearn_score');
+      localStorage.removeItem('ailearn_recommendation');
+    });
+  </script>
+
+</body>
+</html>

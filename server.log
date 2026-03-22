@@ -1,0 +1,31 @@
+
+  ╔══════════════════════════════════════════════════╗
+  ║     AI Personalized Learning — Backend v2.0     ║
+  ╠══════════════════════════════════════════════════╣
+  ║  🌐  http://localhost:8080
+  ╠══════════════════════════════════════════════════╣
+  ║  Endpoints:                                      ║
+  ║    POST  /api/login                              ║
+  ║    GET   /api/quiz                               ║
+  ║    POST  /api/submit                             ║
+  ║    GET   /api/scores                             ║
+  ║    GET   /api/health                             ║
+  ╠══════════════════════════════════════════════════╣
+  ║  Users:  student / 1234  |  admin / admin123     ║
+  ╚══════════════════════════════════════════════════╝
+
+[14:41:52] QUIZ     Served math question: What is 5 + 3 ?
+Saving student score for math...
+Score saved: 100
+[14:41:56] SUBMIT   user=student  course=math  answer=1  score=100  → Move to the next Mathematics topic!
+[14:42:54] HEALTH   Health check OK
+[14:45:12] LOGIN    user=student  success=true
+[14:45:55] QUIZ     Served english question: How do you correctly introduce yourself?
+Saving student score for english...
+Score saved: 100
+[14:46:02] SUBMIT   user=student  course=english  answer=0  score=100  → Move to the next Spoken English topic!
+[14:46:16] LOGIN    user=student  success=true
+[14:46:18] QUIZ     Served math question: What is 12 ÷ 4 ?
+Saving student score for math...
+Score saved: 100
+[14:46:23] SUBMIT   user=student  course=math  answer=1  score=100  → Move to the next Mathematics topic!

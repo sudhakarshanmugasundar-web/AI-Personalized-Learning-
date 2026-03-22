@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – AI Personalized Learning</title>
+  <meta name="description" content="Sign in to AI Personalized Learning Platform and start your tailored learning journey.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-grad: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #1a1a3e 100%);
+      --accent: #6c63ff;
+      --accent-light: #8b85ff;
+      --accent-dark: #5a52e0;
+      --sky: #38bdf8;
+      --card-bg: rgba(255,255,255,0.06);
+      --card-border: rgba(255,255,255,0.12);
+      --text: #ffffff;
+      --text-muted: rgba(255,255,255,0.55);
+      --input-bg: rgba(255,255,255,0.08);
+      --input-border: rgba(255,255,255,0.14);
+      --error: #ef4444;
+      --success: #22c55e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: var(--bg-grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* Ambient background orbs */
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; animation: drift 12s ease-in-out infinite; }
+    .orb-1 { width: 550px; height: 550px; top: -200px; left: -150px; background: radial-gradient(circle, rgba(108,99,255,0.35) 0%, transparent 70%); animation-duration: 10s; }
+    .orb-2 { width: 400px; height: 400px; bottom: -150px; right: -100px; background: radial-gradient(circle, rgba(56,189,248,0.25) 0%, transparent 70%); animation-direction: reverse; animation-duration: 14s; }
+    .orb-3 { width: 300px; height: 300px; top: 40%; left: 50%; background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%); animation-duration: 18s; }
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    .login-wrapper { width: 100%; max-width: 480px; position: relative; z-index: 1; }
+
+    .brand { text-align: center; margin-bottom: 28px; animation: fadeDown 0.7s ease-out both; }
+    .brand-icon {
+      width: 68px; height: 68px; background: linear-gradient(135deg, var(--accent), var(--sky));
+      border-radius: 20px; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 30px; margin-bottom: 14px; box-shadow: 0 10px 36px rgba(108,99,255,0.45);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 10px 36px rgba(108,99,255,0.45); }
+      50%       { box-shadow: 0 10px 50px rgba(108,99,255,0.7); }
+    }
+    .brand h1 { font-size: 1.5rem; font-weight: 700; color: var(--text); letter-spacing: -0.4px; }
+    .brand p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+    .card {
+      background: var(--card-bg); backdrop-filter: blur(28px); border: 1px solid var(--card-border);
+      border-radius: 26px; padding: 40px 36px; box-shadow: 0 30px 60px rgba(0,0,0,0.45);
+      animation: fadeUp 0.7s ease-out both;
+    }
+
+    .card-title { font-size: 1.7rem; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+    .card-sub { font-size: 0.875rem; color: var(--text-muted); margin-top: 5px; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; }
+
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 17px; opacity: 0.55;}
+    
+    input[type="email"], input[type="password"] {
+      width: 100%; padding: 14px 16px 14px 46px; background: var(--input-bg);
+      border: 1.5px solid var(--input-border); border-radius: 13px; color: var(--text);
+      font-size: 0.95rem; font-family: 'Inter', sans-serif; transition: border-color 0.25s, box-shadow 0.25s, background 0.25s; outline: none;
+    }
+    input::placeholder { color: rgba(255,255,255,0.28); }
+    input:focus { border-color: var(--accent-light); background: rgba(108,99,255,0.12); box-shadow: 0 0 0 3.5px rgba(108,99,255,0.22); }
+
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none;
+      border: none; cursor: pointer; font-size: 17px; opacity: 0.5; transition: opacity 0.2s; color: var(--text); padding: 4px;
+    }
+    .toggle-pw:hover { opacity: 0.85; }
+
+    .btn-login {
+      width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: var(--text); border: none; border-radius: 13px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: transform 0.22s, box-shadow 0.22s, opacity 0.22s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;
+    }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(108,99,255,0.55); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .spinner { width: 19px; height: 19px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.75s linear infinite; display: none; }
+    .btn-login.loading .spinner { display: block; }
+    .btn-login.loading .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert { display: none; border-radius: 12px; padding: 12px 16px; margin-top: 16px; font-size: 0.875rem; text-align: center; animation: shake 0.4s ease; }
+    .alert.show { display: block; }
+    .alert-error { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .alert-success { background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+    .footer-link { text-align: center; margin-top: 24px; font-size: 0.85rem; color: var(--text-muted); }
+    .footer-link a { color: var(--accent-light); text-decoration: none; font-weight: 600; }
+    .footer-link a:hover { text-decoration: underline; }
+
+    .footer { text-align: center; margin-top: 24px; font-size: 0.78rem; color: rgba(255,255,255,0.3); animation: fadeUp 0.9s ease-out both; }
+    .footer a { color: var(--accent-light); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-22px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 480px) {
+      body { padding: 16px; align-items: flex-start; padding-top: 40px; }
+      .card { padding: 28px 22px; border-radius: 20px; }
+      .card-title { font-size: 1.45rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="login-wrapper">
+    <div class="brand">
+      <div class="brand-icon">🧠</div>
+      <h1>AI Learning Platform</h1>
+      <p>Your personalized learning journey starts here</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Welcome back 👋</h2>
+      <p class="card-sub">Sign in to continue your learning path</p>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">📧</span>
+            <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔐</span>
+            <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+            <button class="toggle-pw" id="togglePw" type="button" title="Show/hide password">👁️</button>
+          </div>
+        </div>
+
+        <button class="btn-login" id="loginBtn" type="button">
+          <div class="spinner"></div>
+          <span class="btn-text">Sign In &nbsp;→</span>
+        </button>
+
+        <div class="alert alert-error" id="errorMsg"></div>
+        <div class="alert alert-success" id="successMsg"></div>
+      </form>
+
+      <div class="footer-link">
+        Don't have an account? <a href="register.html">Register here</a>
+      </div>
+    </div>
+
+    <p class="footer">
+      © 2024 AI Personalized Learning Platform &nbsp;·&nbsp; <a href="index.html">Back to Home</a>
+    </p>
+  </div>
+
+  <script>
+    const BACKEND = 'http://localhost:8080';
+
+    document.getElementById('togglePw').addEventListener('click', () => {
+      const pw = document.getElementById('password');
+      const btn = document.getElementById('togglePw');
+      if (pw.type === 'password') { pw.type = 'text'; btn.textContent = '🙈'; }
+      else                        { pw.type = 'password'; btn.textContent = '👁️'; }
+    });
+
+    ['email', 'password'].forEach(id =>
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+      })
+    );
+
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+
+    async function doLogin() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+
+      hideAlerts();
+
+      if (!email || !password) {
+        showError('⚠️ Please enter both email and password.');
+        return;
+      }
+
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${BACKEND}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('ailearn_user', data.user);
+          localStorage.setItem('ailearn_loggedIn', 'true');
+          showSuccess('✅ Login successful! Redirecting…');
+          setTimeout(() => window.location.href = 'courses.html', 900);
+        } else {
+          showError('❌ ' + (data.message || 'Invalid email or password.'));
+        }
+
+      } catch (err) {
+        showError('⚠️ Cannot reach the server. Make sure the Java backend is running.');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg; el.classList.add('show');
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg; el.classList.add('show');
+    }
+
+    function hideAlerts() {
+      document.getElementById('errorMsg').classList.remove('show');
+      document.getElementById('successMsg').classList.remove('show');
+    }
+  </script>
+</body>
+</html>
