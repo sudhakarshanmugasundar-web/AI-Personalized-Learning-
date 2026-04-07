@@ -32,6 +32,13 @@ public class Database {
     }
 
     /**
+     * Checks if an email is already registered.
+     */
+    public static boolean userExists(String email) {
+        return usersTable.containsKey(email);
+    }
+
+    /**
      * Checks if a given email and password combination is valid.
      * @return The user's name if valid, null otherwise.
      */
@@ -41,5 +48,12 @@ public class Database {
             return user.get("name");
         }
         return null;
+    }
+
+    /**
+     * Returns a user record by email, or null if not found.
+     */
+    public static Map<String, String> getUserByEmail(String email) {
+        return usersTable.get(email);
     }
 }

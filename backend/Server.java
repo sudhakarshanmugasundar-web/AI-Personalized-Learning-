@@ -2,9 +2,12 @@ import com.sun.net.httpserver.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 @SuppressWarnings("unchecked")
 public class Server {
@@ -13,6 +16,22 @@ public class Server {
     private static final List<Map<String,Object>> SCORE_HISTORY = new ArrayList<>();
     private static final Map<String,Map<Integer,List<Map<String,Object>>>> COURSES = new LinkedHashMap<>();
     // courseIndex removed — module data generated fresh per request
+
+    // ─── OpenAI Configuration ───────────────────────────────────────────────
+    private static final String OPENAI_API_KEY = System.getenv("OPENAI_API_KEY") != null
+        ? System.getenv("OPENAI_API_KEY") : "YOUR_OPENAI_API_KEY_HERE";
+    private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String OPENAI_MODEL   = "gpt-3.5-turbo";
+
+    // ─── Auth Configuration ─────────────────────────────────────────────────
+    // JWT secret — change this to a long random string in production
+    private static final String JWT_SECRET = System.getenv("JWT_SECRET") != null
+        ? System.getenv("JWT_SECRET") : "ailearn-jwt-secret-key-2025-change-in-production";
+    // Google OAuth Client ID — set via .env or environment
+    private static final String GOOGLE_CLIENT_ID = System.getenv("GOOGLE_CLIENT_ID") != null
+        ? System.getenv("GOOGLE_CLIENT_ID") : "YOUR_GOOGLE_CLIENT_ID";
+    // Token expiry: 7 days
+    private static final long JWT_EXPIRY_SECONDS = 7 * 24 * 3600L;
 
     // ─── PRACTICE QUESTIONS: 5 unique per topic ───────────────────────────────
 
@@ -506,9 +525,73 @@ public class Server {
         server.createContext("/api/submit",   Server::handleSubmit);
         server.createContext("/api/scores",   Server::handleScores);
         server.createContext("/api/health",   Server::handleHealth);
-        server.setExecutor(null);
+        server.createContext("/api/chat",         Server::handleChat);
+        server.createContext("/api/tts",          Server::handleTTS);
+        server.createContext("/api/google-auth",  Server::handleGoogleAuth);
+        server.createContext("/api/verify-token", Server::handleVerifyToken);
+        server.createContext("/chat",             Server::handleChatSimple);
+        // Serve static frontend files
+        server.createContext("/frontend", Server::handleStaticFile);
+        server.createContext("/",         Server::handleRoot);
+        server.setExecutor(java.util.concurrent.Executors.newFixedThreadPool(8));
         server.start();
         printBanner();
+    }
+
+    /** Redirect root URL to the frontend index page */
+    static void handleRoot(HttpExchange ex) throws IOException {
+        String path = ex.getRequestURI().getPath();
+        if (path.equals("/") || path.isEmpty()) {
+            ex.getResponseHeaders().set("Location", "/frontend/index.html");
+            ex.sendResponseHeaders(302, -1);
+        } else {
+            handleStaticFile(ex);
+        }
+        ex.close();
+    }
+
+    /** Serve static files from the project's frontend directory */
+    static void handleStaticFile(HttpExchange ex) throws IOException {
+        String uriPath = ex.getRequestURI().getPath();
+        // Resolve safe path: project root is parent of backend/ where Server.class runs from
+        // Compiled to bin/, so work dir is project root when launched via run.sh
+        File projectRoot = new File(System.getProperty("user.dir"));
+        File file = new File(projectRoot, uriPath.startsWith("/") ? uriPath.substring(1) : uriPath).getCanonicalFile();
+
+        // Security: ensure file is inside project root
+        if (!file.getCanonicalPath().startsWith(projectRoot.getCanonicalPath())) {
+            send(ex, 403, "Forbidden");
+            return;
+        }
+
+        if (!file.exists() || !file.isFile()) {
+            send(ex, 404, "File not found: " + uriPath);
+            return;
+        }
+
+        String mime = getMimeType(file.getName());
+        byte[] data = Files.readAllBytes(file.toPath());
+        ex.getResponseHeaders().set("Content-Type", mime);
+        ex.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        ex.sendResponseHeaders(200, data.length);
+        try (OutputStream os = ex.getResponseBody()) {
+            os.write(data);
+        }
+        ex.close();
+    }
+
+    static String getMimeType(String fileName) {
+        if (fileName.endsWith(".html")) return "text/html; charset=UTF-8";
+        if (fileName.endsWith(".css"))  return "text/css; charset=UTF-8";
+        if (fileName.endsWith(".js"))   return "application/javascript; charset=UTF-8";
+        if (fileName.endsWith(".json")) return "application/json";
+        if (fileName.endsWith(".png"))  return "image/png";
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+        if (fileName.endsWith(".gif"))  return "image/gif";
+        if (fileName.endsWith(".svg"))  return "image/svg+xml";
+        if (fileName.endsWith(".ico"))  return "image/x-icon";
+        if (fileName.endsWith(".woff") || fileName.endsWith(".woff2")) return "font/woff2";
+        return "application/octet-stream";
     }
 
     static void handleLogin(HttpExchange ex) throws IOException {
@@ -517,8 +600,175 @@ public class Server {
         String email = field(body, "email"), password = field(body, "password");
         String name = Database.authenticate(email, password);
         log("LOGIN", "user=" + email + " success=" + (name != null));
-        if (name != null) send(ex, 200, "{\"success\":true,\"message\":\"Login successful\",\"user\":\"" + esc(name) + "\"}");
-        else send(ex, 401, "{\"success\":false,\"message\":\"Invalid email or password\"}");
+        if (name != null) {
+            String token = createJWT(email, email, name, "");
+            send(ex, 200, ("{\"success\":true,\"message\":\"Login successful\",\"user\":\"" + esc(name) + "\",\"token\":\"" + token + "\"}"));
+        } else {
+            send(ex, 401, "{\"success\":false,\"message\":\"Invalid email or password\"}");
+        }
+    }
+
+    // ─── GOOGLE OAUTH ENDPOINT ──────────────────────────────────────────────────
+    static void handleGoogleAuth(HttpExchange ex) throws IOException {
+        cors(ex); if (preflight(ex)) return; requireMethod(ex, "POST");
+        String body = body(ex);
+        String idToken = field(body, "idToken");
+        if (idToken.isEmpty()) { send(ex, 400, "{\"success\":false,\"message\":\"idToken required\"}"); return; }
+
+        try {
+            // Verify with Google's tokeninfo endpoint
+            Map<String,String> info = verifyGoogleIdToken(idToken);
+            if (info == null) {
+                send(ex, 401, "{\"success\":false,\"message\":\"Invalid or expired Google token\"}");
+                return;
+            }
+
+            String googleId = info.getOrDefault("sub", "");
+            String email    = info.getOrDefault("email", "");
+            String name     = info.getOrDefault("name", email.split("@")[0]);
+            String picture  = info.getOrDefault("picture", "");
+
+            if (email.isEmpty()) {
+                send(ex, 401, "{\"success\":false,\"message\":\"Could not retrieve email from Google\"}");
+                return;
+            }
+
+            // Create user if not exists (auto-register Google users)
+            if (!Database.userExists(email)) {
+                Database.registerUser(name, email, "GOOGLE_OAUTH_" + googleId);
+                log("GOOGLE", "New user created: " + email);
+            } else {
+                log("GOOGLE", "Existing user login: " + email);
+            }
+
+            String token = createJWT(googleId, email, name, picture);
+            String resp = ("{\"success\":true,\"token\":\"" + token +
+                "\",\"name\":\"" + esc(name) +
+                "\",\"email\":\"" + esc(email) +
+                "\",\"picture\":\"" + esc(picture) + "\"}");
+            send(ex, 200, resp);
+
+        } catch (Exception e) {
+            log("GOOGLE", "Auth error: " + e.getMessage());
+            send(ex, 500, "{\"success\":false,\"message\":\"Authentication error: " + esc(e.getMessage()) + "\"}");
+        }
+    }
+
+    // ─── VERIFY TOKEN ENDPOINT ──────────────────────────────────────────────────
+    static void handleVerifyToken(HttpExchange ex) throws IOException {
+        cors(ex); if (preflight(ex)) return; requireMethod(ex, "POST");
+        String body  = body(ex);
+        String token = field(body, "token");
+        if (token.isEmpty()) { send(ex, 400, "{\"valid\":false}"); return; }
+
+        Map<String,String> claims = verifyJWT(token);
+        if (claims == null) {
+            send(ex, 200, "{\"valid\":false}");
+        } else {
+            String name    = claims.getOrDefault("name", "");
+            String email   = claims.getOrDefault("email", "");
+            String picture = claims.getOrDefault("picture", "");
+            send(ex, 200, ("{\"valid\":true,\"name\":\"" + esc(name) +
+                "\",\"email\":\"" + esc(email) +
+                "\",\"picture\":\"" + esc(picture) + "\"}"));
+        }
+    }
+
+    // ─── JWT UTILITIES (HMAC-SHA256, no external libs) ─────────────────────────
+    static String createJWT(String sub, String email, String name, String picture) {
+        try {
+            String headerJson  = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
+            long exp = System.currentTimeMillis() / 1000 + JWT_EXPIRY_SECONDS;
+            String payloadJson = "{\"sub\":\"" + esc(sub) +
+                "\",\"email\":\"" + esc(email) +
+                "\",\"name\":\"" + esc(name) +
+                "\",\"picture\":\"" + esc(picture) +
+                "\",\"iat\":" + (System.currentTimeMillis() / 1000) +
+                ",\"exp\":" + exp + "}";
+
+            String header  = Base64.getUrlEncoder().withoutPadding().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
+            String payload = Base64.getUrlEncoder().withoutPadding().encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
+            String sigInput = header + "." + payload;
+
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(JWT_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            String sig = Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(sigInput.getBytes(StandardCharsets.UTF_8)));
+            return sigInput + "." + sig;
+        } catch (Exception e) {
+            log("JWT", "Create error: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /** Verifies a JWT and returns its claims, or null if invalid/expired */
+    static Map<String,String> verifyJWT(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) return null;
+
+            String sigInput = parts[0] + "." + parts[1];
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(JWT_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            String expectedSig = Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(sigInput.getBytes(StandardCharsets.UTF_8)));
+            if (!expectedSig.equals(parts[2])) return null; // signature mismatch
+
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+
+            // Check expiry
+            String expStr = field(payloadJson, "exp");
+            if (!expStr.isEmpty()) {
+                long exp = Long.parseLong(expStr.trim());
+                if (System.currentTimeMillis() / 1000 > exp) return null; // expired
+            }
+
+            Map<String,String> claims = new HashMap<>();
+            claims.put("sub",     field(payloadJson, "sub"));
+            claims.put("email",   field(payloadJson, "email"));
+            claims.put("name",    field(payloadJson, "name"));
+            claims.put("picture", field(payloadJson, "picture"));
+            return claims;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Calls Google tokeninfo API to verify an ID token */
+    static Map<String,String> verifyGoogleIdToken(String idToken) throws Exception {
+        URL url = URI.create("https://oauth2.googleapis.com/tokeninfo?id_token=" + URLEncoder.encode(idToken, StandardCharsets.UTF_8)).toURL();
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(8000);
+
+        int code = conn.getResponseCode();
+        InputStream is = (code == 200) ? conn.getInputStream() : conn.getErrorStream();
+        String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+        if (code != 200) {
+            log("GOOGLE", "tokeninfo error " + code + ": " + resp.substring(0, Math.min(120, resp.length())));
+            return null;
+        }
+
+        // Verify audience matches our client ID (skip check if not configured)
+        String aud = field(resp, "aud");
+        if (!GOOGLE_CLIENT_ID.equals("YOUR_GOOGLE_CLIENT_ID") && !aud.equals(GOOGLE_CLIENT_ID)) {
+            log("GOOGLE", "Token audience mismatch: " + aud);
+            return null;
+        }
+
+        // Verify email is confirmed
+        String emailVerified = field(resp, "email_verified");
+        if (!"true".equalsIgnoreCase(emailVerified)) {
+            log("GOOGLE", "Email not verified");
+            return null;
+        }
+
+        Map<String,String> info = new HashMap<>();
+        info.put("sub",     field(resp, "sub"));
+        info.put("email",   field(resp, "email"));
+        info.put("name",    field(resp, "name"));
+        info.put("picture", field(resp, "picture"));
+        return info;
     }
 
     static void handleRegister(HttpExchange ex) throws IOException {
@@ -636,6 +886,193 @@ public class Server {
         send(ex, 200, "{\"status\":\"ok\"}");
     }
 
+    // ─── AI CHAT ENDPOINT ───────────────────────────────────────────────────
+    static void handleChat(HttpExchange ex) throws IOException {
+        cors(ex); if (preflight(ex)) return; requireMethod(ex, "POST");
+        String body = body(ex);
+
+        // Extract fields
+        String message = field(body, "message");
+        String course  = field(body, "course");
+        String level   = field(body, "level");
+        String history = extractHistory(body);
+
+        if (message.isEmpty()) { send(ex, 400, "{\"error\":\"message required\"}"); return; }
+
+        // Build system prompt based on course
+        String sysPrompt = buildSystemPrompt(course, level);
+
+        // Build the messages JSON array
+        StringBuilder msgs = new StringBuilder("[");
+        msgs.append("{\"role\":\"system\",\"content\":\"").append(esc(sysPrompt)).append("\"}");
+
+        // Append previous history (already validated JSON array items)
+        if (!history.isEmpty()) {
+            msgs.append(",").append(history);
+        }
+
+        // Append current user message
+        msgs.append(",{\"role\":\"user\",\"content\":\"").append(esc(message)).append("\"}");
+        msgs.append("]");
+
+        // Build request payload
+        String payload = "{" +
+            "\"model\":\"" + OPENAI_MODEL + "\"," +
+            "\"messages\":" + msgs + "," +
+            "\"max_tokens\":800," +
+            "\"temperature\":0.7" +
+            "}";
+
+        // Check if API key is configured
+        if (OPENAI_API_KEY.equals("YOUR_OPENAI_API_KEY_HERE") || OPENAI_API_KEY.isEmpty()) {
+            log("CHAT", "OpenAI API key not configured");
+            send(ex, 503, "{\"error\":\"API_KEY_NOT_SET\",\"reply\":\"OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable before starting the server.\"}");
+            return;
+        }
+
+        // Call OpenAI
+        try {
+            URL url = URI.create(OPENAI_API_URL).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setRequestProperty("Authorization", "Bearer " + OPENAI_API_KEY);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(payload.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int code = conn.getResponseCode();
+            InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+            String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+            if (code != 200) {
+                log("CHAT", "OpenAI error " + code + ": " + resp.substring(0, Math.min(200, resp.length())));
+                send(ex, 502, "{\"error\":\"OpenAI API error\",\"reply\":\"The AI service returned an error. Please try again.\",\"details\":\"" + esc(resp.substring(0, Math.min(150, resp.length()))) + "\"}");
+                return;
+            }
+
+            // Parse reply from JSON response
+            String reply = extractOpenAIReply(resp);
+            log("CHAT", "user=" + message.substring(0, Math.min(50,message.length())) + "...");
+            send(ex, 200, "{\"reply\":\"" + esc(reply) + "\"}");
+
+        } catch (Exception e) {
+            log("CHAT", "Error: " + e.getMessage());
+            send(ex, 500, "{\"error\":\"" + esc(e.getMessage()) + "\",\"reply\":\"Something went wrong connecting to AI. Please try again.\"}" );
+        }
+    }
+
+    static void handleChatSimple(HttpExchange ex) throws IOException {
+        cors(ex); if (preflight(ex)) return; requireMethod(ex, "POST");
+        String body = body(ex);
+        String message = field(body, "message");
+        if (message.isEmpty()) { send(ex, 400, "{\"reply\":\"Please enter a message.\"}"); return; }
+        
+        log("CHAT_SIMPLE", "userMsg=" + message);
+        String aiResponse = ChatService.getAIResponse(message);
+        
+        // Return JSON response as requested: {"reply": "..."}
+        String jsonResp = "{\"reply\":\"" + esc(aiResponse) + "\"}";
+        send(ex, 200, jsonResp);
+    }
+
+    static String buildSystemPrompt(String course, String level) {
+        String levelStr = (level != null && !level.isEmpty()) ? " Level " + level : "";
+        String base;
+        switch (course == null ? "" : course.toLowerCase()) {
+            case "java":
+                base = "You are an expert Java programming tutor on an AI Personalized Learning platform." +
+                    " The student is studying Java" + levelStr + "." +
+                    " Your role: explain Java concepts clearly, provide correct Java syntax examples, help debug Java code," +
+                    " generate practice problems, and quiz students with MCQs." +
+                    " Always show Java code in a code block using triple backticks with 'java' language tag." +
+                    " Keep responses clear, structured and educational. Use examples liberally." +
+                    " When giving code, always explain what it does line by line." +
+                    " After explaining a concept, optionally ask if the student wants a practice problem.";
+                break;
+            case "python":
+                base = "You are an expert Python programming tutor on an AI Personalized Learning platform." +
+                    " The student is studying Python" + levelStr + "." +
+                    " Your role: explain Python concepts clearly, provide correct Python syntax examples, help debug Python code," +
+                    " generate practice problems, and quiz students with MCQs." +
+                    " Always show Python code in a code block using triple backticks with 'python' language tag." +
+                    " Emphasize Python's clean syntax, indentation rules, and Pythonic idioms." +
+                    " When giving code, always explain what it does. After explaining, optionally offer a practice problem.";
+                break;
+            case "english":
+                base = "You are an expert Spoken English and communication trainer on an AI Personalized Learning platform." +
+                    " The student is learning Spoken English" + levelStr + "." +
+                    " Your role: improve the student's English speaking, grammar, pronunciation, and vocabulary." +
+                    " Correct grammatical mistakes politely. Explain grammar rules with examples." +
+                    " Provide speaking tips, pronunciation guidance, and vocabulary exercises." +
+                    " Keep responses encouraging, practical, and focused on daily communication." +
+                    " After explaining, optionally ask a speaking or fill-in-the-blank exercise.";
+                break;
+            default:
+                base = "You are a helpful AI Tutor on an AI Personalized Learning platform covering Java programming," +
+                    " Python programming, and Spoken English communication." +
+                    " Provide clear, structured explanations with examples. For code questions, show code blocks." +
+                    " For English questions, explain grammar clearly. Keep responses educational and engaging." +
+                    " After answering, optionally suggest a related practice problem or quiz question.";
+        }
+        return base + " Be concise but thorough. Use bullet points for lists. Maximum response length: ~400 words.";
+    }
+
+    static String extractHistory(String body) {
+        // Extract the 'history' array from JSON body as a raw JSON string of message objects
+        String key = "\"history\"";
+        int ki = body.indexOf(key);
+        if (ki < 0) return "";
+        int arrStart = body.indexOf("[", ki + key.length());
+        if (arrStart < 0) return "";
+        int depth = 0, i = arrStart;
+        while (i < body.length()) {
+            char c = body.charAt(i);
+            if (c == '[' || c == '{') depth++;
+            else if (c == ']' || c == '}') { depth--; if (depth == 0) break; }
+            i++;
+        }
+        if (i >= body.length()) return "";
+        String arr = body.substring(arrStart + 1, i).trim();
+        return arr; // contents of the array (without outer brackets)
+    }
+
+    static String extractOpenAIReply(String json) {
+        // Extract: choices[0].message.content
+        String marker = "\"content\"";
+        int ci = json.indexOf(marker);
+        if (ci < 0) return "I couldn't generate a response. Please try again.";
+        int vs = json.indexOf('"', ci + marker.length() + 1);
+        if (vs < 0) return "Response parse error.";
+        // Find closing quote accounting for escaped quotes
+        StringBuilder sb = new StringBuilder();
+        int j = vs + 1;
+        while (j < json.length()) {
+            char c = json.charAt(j);
+            if (c == '\\' && j + 1 < json.length()) {
+                char next = json.charAt(j + 1);
+                switch (next) {
+                    case 'n': sb.append('\n'); break;
+                    case 't': sb.append('\t'); break;
+                    case '"': sb.append('"'); break;
+                    case '\\': sb.append('\\'); break;
+                    default: sb.append('\\').append(next);
+                }
+                j += 2;
+            } else if (c == '"') {
+                break;
+            } else {
+                sb.append(c);
+                j++;
+            }
+        }
+        return sb.toString();
+    }
+
     // ── UTILITIES ──
     static void cors(HttpExchange ex) {
         Headers h = ex.getResponseHeaders();
@@ -676,9 +1113,94 @@ public class Server {
     }
     static void printBanner() {
         System.out.println("\n  ╔══════════════════════════════════════════════════╗");
-        System.out.println("  ║     AI Personalized Learning — Backend v4.0     ║");
+        System.out.println("  ║     AI Personalized Learning — Backend v6.0     ║");
         System.out.println("  ╠══════════════════════════════════════════════════╣");
         System.out.printf ("  ║  🌐  http://%s:%d%n", HOST, PORT);
+        boolean keySet = !OPENAI_API_KEY.equals("YOUR_OPENAI_API_KEY_HERE") && !OPENAI_API_KEY.isEmpty();
+        System.out.println("  ║  🤖  AI Chat: " + (keySet ? "✅ OpenAI Connected" : "❌ API Key Not Set") + "          ║");
+        System.out.println("  ║  🔊  AI TTS:  " + (keySet ? "✅ OpenAI TTS Ready" : "⚡ Browser TTS (fallback)") + "   ║");
         System.out.println("  ╚══════════════════════════════════════════════════╝\n");
+        if (!keySet) {
+            System.out.println("  ⚠️  Set OPENAI_API_KEY to enable AI chatbot + TTS:");
+            System.out.println("  export OPENAI_API_KEY=sk-...");
+            System.out.println("  Then re-run the server.\n");
+        }
+    }
+
+    // ─── TTS ENDPOINT (OpenAI TTS or fallback) ──────────────────────────────
+    static void handleTTS(HttpExchange ex) throws IOException {
+        // Set CORS headers - TTS returns audio/mpeg so we override content-type below
+        Headers h = ex.getResponseHeaders();
+        h.add("Access-Control-Allow-Origin", "*");
+        h.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        h.add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+        if ("OPTIONS".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(204, -1); return;
+        }
+
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String text  = field(body, "text");
+        String voice = field(body, "voice");
+        String speed = field(body, "speed");
+        if (text.isEmpty()) {
+            h.add("Content-Type", "application/json; charset=utf-8");
+            byte[] err = "{\"error\":\"text required\"}".getBytes(StandardCharsets.UTF_8);
+            ex.sendResponseHeaders(400, err.length);
+            try (OutputStream os = ex.getResponseBody()) { os.write(err); }
+            return;
+        }
+
+        boolean keySet = !OPENAI_API_KEY.equals("YOUR_OPENAI_API_KEY_HERE") && !OPENAI_API_KEY.isEmpty();
+        if (!keySet) {
+            // No API key — tell frontend to use browser TTS
+            h.add("Content-Type", "application/json; charset=utf-8");
+            byte[] fb = ("{\"fallback\":true,\"text\":\"" + esc(text) + "\"}").getBytes(StandardCharsets.UTF_8);
+            ex.sendResponseHeaders(200, fb.length);
+            try (OutputStream os = ex.getResponseBody()) { os.write(fb); }
+            return;
+        }
+
+        try {
+            String ttsVoice = "nova"; // nova=female, echo=male, alloy=neutral
+            if ("male".equalsIgnoreCase(voice)) ttsVoice = "echo";
+            float spd = 1.0f;
+            try { spd = Float.parseFloat(speed); } catch (Exception ignore) {}
+
+            String payload = "{\"model\":\"tts-1\",\"input\":\"" + esc(text) + "\",\"voice\":\"" + ttsVoice + "\",\"speed\":" + spd + "}";
+
+            URL url = URI.create("https://api.openai.com/v1/audio/speech").toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + OPENAI_API_KEY);
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(20000);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(payload.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int code = conn.getResponseCode();
+            if (code == 200) {
+                byte[] audio = conn.getInputStream().readAllBytes();
+                h.add("Content-Type", "audio/mpeg");
+                ex.sendResponseHeaders(200, audio.length);
+                try (OutputStream os = ex.getResponseBody()) { os.write(audio); }
+                log("TTS", "generated " + audio.length + " bytes for: " + text.substring(0, Math.min(40, text.length())));
+            } else {
+                // TTS API error — fallback to browser
+                h.add("Content-Type", "application/json; charset=utf-8");
+                byte[] fb = ("{\"fallback\":true,\"text\":\"" + esc(text) + "\"}").getBytes(StandardCharsets.UTF_8);
+                ex.sendResponseHeaders(200, fb.length);
+                try (OutputStream os = ex.getResponseBody()) { os.write(fb); }
+            }
+        } catch (Exception e) {
+            log("TTS", "Error: " + e.getMessage());
+            h.add("Content-Type", "application/json; charset=utf-8");
+            byte[] fb = ("{\"fallback\":true,\"text\":\"" + esc(text) + "\"}").getBytes(StandardCharsets.UTF_8);
+            ex.sendResponseHeaders(200, fb.length);
+            try (OutputStream os = ex.getResponseBody()) { os.write(fb); }
+        }
     }
 }

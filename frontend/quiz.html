@@ -104,22 +104,35 @@
     .comm-card { background:linear-gradient(135deg,rgba(108,99,255,.12),rgba(56,189,248,.08)); border:1px solid rgba(108,99,255,.25); border-radius:18px; padding:28px; margin-bottom:20px; }
     .comm-sentence { font-size:1.4rem; font-weight:700; line-height:1.6; color:white; margin:16px 0; background:rgba(0,0,0,.3); padding:20px 24px; border-radius:12px; border-left:4px solid var(--accent); }
     .comm-blank-word { color:var(--amber); font-weight:800; }
-    .comm-actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:20px; }
+    .comm-actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:20px; align-items:center; }
     .speak-btn { display:flex; align-items:center; gap:10px; padding:13px 24px; border-radius:12px; font-size:.95rem; font-weight:700; cursor:pointer; border:none; font-family:'Inter',sans-serif; transition:all .2s; }
     .btn-record { background:linear-gradient(135deg,#ef4444,#dc2626); color:white; }
     .btn-record:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(239,68,68,.4); }
+    .btn-record:disabled { opacity:.5; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
     .btn-stop { background:rgba(255,255,255,.1); color:white; border:1px solid var(--border); }
     .btn-play-tts { background:linear-gradient(135deg,var(--sky),#0ea5e9); color:white; }
     .btn-play-tts:hover { transform:translateY(-2px); }
+    .btn-play-tts:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+    .btn-replay { background:rgba(108,99,255,.2); color:var(--accent); border:1px solid rgba(108,99,255,.4); }
+    .btn-replay:hover { background:rgba(108,99,255,.35); transform:translateY(-2px); }
     .recording-indicator { display:none; align-items:center; gap:8px; color:#ef4444; font-weight:600; font-size:.88rem; }
     .recording-indicator.active { display:flex; }
     .rec-dot { width:10px; height:10px; border-radius:50%; background:#ef4444; animation:blink .8s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    .processing-indicator { display:none; align-items:center; gap:8px; color:var(--sky); font-weight:600; font-size:.88rem; }
+    .processing-indicator.active { display:flex; }
+    .proc-spinner { width:14px; height:14px; border:2px solid rgba(56,189,248,.3); border-top-color:var(--sky); border-radius:50%; animation:spin .7s linear infinite; }
     .accuracy-box { margin-top:20px; padding:20px; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3); border-radius:14px; display:none; }
     .accuracy-score { font-size:2.5rem; font-weight:800; color:var(--green); }
     .transcript-text { color:rgba(255,255,255,.7); margin-top:10px; font-size:.9rem; }
     .acc-progress { height:8px; background:rgba(255,255,255,.1); border-radius:100px; margin:12px 0; overflow:hidden; }
     .acc-bar { height:100%; border-radius:100px; transition:width 1s ease; }
+    /* Voice Settings */
+    .voice-settings { display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:12px; padding:12px 18px; margin-bottom:20px; }
+    .voice-settings label { font-size:.78rem; color:var(--muted); font-weight:600; white-space:nowrap; }
+    .voice-settings select, .voice-settings input[type=range] { background:rgba(0,0,0,.3); border:1px solid var(--border); border-radius:7px; color:white; padding:4px 8px; font-size:.8rem; font-family:'Inter',sans-serif; cursor:pointer; }
+    .vs-group { display:flex; align-items:center; gap:8px; }
+    .vs-val { font-size:.82rem; color:var(--sky); font-weight:700; min-width:32px; }
 
     /* ── BUTTONS ── */
     .action-bar { display:flex; justify-content:flex-end; margin-top:28px; gap:14px; padding-top:20px; border-top:1px solid rgba(255,255,255,.05); }
@@ -502,6 +515,105 @@
       out.innerHTML = `<span style="color:var(--red)">${htmlEsc(msg)}</span>`;
     }
 
+    // ── AI VOICE SYSTEM ──
+    const voiceSettings = { rate: 0.9, gender: 'female', volume: 1.0 };
+    let lastTTSSentence = '';
+
+    function getBestVoice(gender) {
+      const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+      const enVoices = voices.filter(v => v.lang && v.lang.startsWith('en'));
+      if (gender === 'female') {
+        const f = enVoices.find(v => /samantha|karen|victoria|zira|moira|fiona|female|woman/i.test(v.name));
+        if (f) return f;
+      } else {
+        const m = enVoices.find(v => /alex|daniel|david|george|fred|male|man/i.test(v.name));
+        if (m) return m;
+      }
+      return enVoices[0] || voices[0] || null;
+    }
+
+    window.playTTS = async function(sentence) {
+      if (!sentence) return;
+      lastTTSSentence = sentence;
+
+      // Update button states
+      document.querySelectorAll('.btn-play-tts').forEach(b => {
+        b.textContent = '🔊 Speaking…'; b.disabled = true;
+      });
+
+      const finishButton = () => document.querySelectorAll('.btn-play-tts').forEach(b => {
+        b.textContent = '🔊 Hear Sentence'; b.disabled = false;
+      });
+
+      // ── Try backend TTS (OpenAI) first ──
+      try {
+        const res = await fetch('http://localhost:8080/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: sentence, voice: voiceSettings.gender, speed: voiceSettings.rate })
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('audio')) {
+          // Got real OpenAI audio
+          const blob = await res.blob();
+          const url  = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.volume = parseFloat(voiceSettings.volume);
+          audio.onended = () => { finishButton(); URL.revokeObjectURL(url); };
+          audio.onerror = () => { finishButton(); useBrowserTTS(sentence, finishButton); };
+          audio.play();
+          return;
+        }
+        // Fallback JSON received
+      } catch(e) { /* server not reachable, use browser */ }
+
+      // ── Browser TTS fallback ──
+      useBrowserTTS(sentence, finishButton);
+    };
+
+    function useBrowserTTS(sentence, onEnd) {
+      if (!window.speechSynthesis) { if(onEnd) onEnd(); return; }
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(sentence);
+      utt.lang   = 'en-IN';
+      utt.rate   = parseFloat(voiceSettings.rate);
+      utt.volume = parseFloat(voiceSettings.volume);
+      const applyVoice = () => {
+        const v = getBestVoice(voiceSettings.gender);
+        if (v) utt.voice = v;
+        utt.onend = onEnd || null;
+        window.speechSynthesis.speak(utt);
+      };
+      if (window.speechSynthesis.getVoices().length > 0) applyVoice();
+      else { window.speechSynthesis.onvoiceschanged = applyVoice; }
+    }
+
+    window.replayTTS = function() { if (lastTTSSentence) window.playTTS(lastTTSSentence); };
+
+    function buildVoiceBar() {
+      return `<div class="voice-settings">
+        <span style="font-size:.82rem;color:var(--sky);font-weight:700">🔊 Voice:</span>
+        <div class="vs-group">
+          <label>Speed</label>
+          <input type="range" min="0.8" max="1.2" step="0.1" value="${voiceSettings.rate}"
+            oninput="voiceSettings.rate=this.value;document.getElementById('vsRV').textContent=parseFloat(this.value).toFixed(1)+'x'">
+          <span class="vs-val" id="vsRV">${parseFloat(voiceSettings.rate).toFixed(1)}x</span>
+        </div>
+        <div class="vs-group">
+          <label>Voice</label>
+          <select onchange="voiceSettings.gender=this.value">
+            <option value="female" ${voiceSettings.gender==='female'?'selected':''}>Female</option>
+            <option value="male" ${voiceSettings.gender==='male'?'selected':''}>Male</option>
+          </select>
+        </div>
+        <div class="vs-group">
+          <label>Vol</label>
+          <input type="range" min="0.5" max="1.0" step="0.1" value="${voiceSettings.volume}"
+            oninput="voiceSettings.volume=this.value">
+        </div>
+      </div>`;
+    }
+
     // ── COMMUNICATION (English) ──
     function renderCommunication(ca) {
       nextBtn.style.display = 'none';
@@ -517,57 +629,68 @@
     let recognition = null;
 
     function renderReading(ca, ed) {
-      const sentences = ed.sentences;
       commIdx = 0;
-      showReadingItem(ca, sentences);
+      showReadingItem(ca, ed.sentences);
     }
 
     function showReadingItem(ca, sentences) {
       const item = sentences[commIdx];
-      ca.innerHTML = `
+      const safeText = item.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      ca.innerHTML = buildVoiceBar() + `
         <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level 1 — Reading Practice • ${commIdx+1}/${sentences.length}</span></div>
         <div class="comm-card">
-          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">📖 Read this sentence aloud clearly:</div>
+          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🔊 Listen to the AI voice, then record yourself reading aloud:</div>
           <div class="comm-sentence">${htmlEsc(item.text)}</div>
           <div class="comm-actions">
-            <button class="speak-btn btn-record" id="startRecBtn" onclick="startReading('${item.expected.replace(/'/g,"\\'")}')">🎙️ Start Reading</button>
+            <button class="speak-btn btn-play-tts" onclick="playTTS('${safeText}')">🔊 Hear Sentence</button>
+            <button class="speak-btn btn-replay" onclick="replayTTS()">↩ Replay</button>
+            <button class="speak-btn btn-record" id="startRecBtn" onclick="startReading('${item.expected.replace(/'/g,"\\'")}')">🎙️ Speak Answer</button>
             <div class="recording-indicator" id="recInd"><div class="rec-dot"></div> Recording…</div>
+            <div class="processing-indicator" id="procInd"><div class="proc-spinner"></div> Processing…</div>
           </div>
         </div>
         <div class="accuracy-box" id="accBox">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="color:var(--muted);font-size:.82rem">Accuracy Score</div>
-              <div class="accuracy-score" id="accScore">0%</div>
-            </div>
+            <div><div style="color:var(--muted);font-size:.82rem">Accuracy Score</div><div class="accuracy-score" id="accScore">0%</div></div>
             <div id="accEmoji" style="font-size:2.5rem">🎯</div>
           </div>
           <div class="acc-progress"><div class="acc-bar" id="accBar" style="width:0%;background:var(--green)"></div></div>
           <div class="transcript-text">You said: "<span id="transText">—</span>"</div>
-          <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextReading(${sentences.length})">Next →</button>
+          <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextReading(${sentences.length})">Next Sentence →</button>
         </div>`;
+      setTimeout(() => playTTS(item.text), 600);
     }
 
-    let commSentences = [];
     window.startReading = function(expected) {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         alert('Speech recognition not supported. Please use Google Chrome.'); return;
       }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
-      recognition.lang = 'en-US';
+      recognition.lang = 'en-IN';
       recognition.interimResults = false;
       document.getElementById('recInd').classList.add('active');
       document.getElementById('startRecBtn').disabled = true;
       recognition.onresult = e => {
-        const transcript = e.results[0][0].transcript.toLowerCase().trim();
-        const acc = calcAccuracy(transcript, expected);
-        showAccuracy(acc, transcript);
-      };
-      recognition.onerror = () => {
         document.getElementById('recInd').classList.remove('active');
+        document.getElementById('procInd').classList.add('active');
+        setTimeout(() => {
+          document.getElementById('procInd').classList.remove('active');
+          const transcript = e.results[0][0].transcript.toLowerCase().trim();
+          if (!transcript) {
+            document.getElementById('startRecBtn').disabled = false;
+            alert('⚠️ No speech detected. Please speak clearly and try again.'); return;
+          }
+          const acc = calcAccuracy(transcript, expected);
+          showAccuracy(acc, transcript);
+        }, 300);
+      };
+      recognition.onerror = (ev) => {
+        document.getElementById('recInd').classList.remove('active');
+        document.getElementById('procInd').classList.remove('active');
         document.getElementById('startRecBtn').disabled = false;
-        alert('Could not capture voice. Check microphone permissions.');
+        if (ev.error === 'no-speech') alert('⚠️ No speech detected. Speak clearly into the microphone.');
+        else alert('Could not capture voice. Check microphone permissions and use Chrome.');
       };
       recognition.onend = () => document.getElementById('recInd').classList.remove('active');
       recognition.start();
@@ -584,65 +707,77 @@
       showBlankItem(ca, ed.blanks);
     }
 
+    // ✅ FIXED: Answer hidden until AFTER user submits voice
     function showBlankItem(ca, blanks) {
       const item = blanks[commIdx];
       const display = item.sentence.replace('______', '<span class="comm-blank-word">______</span>');
-      ca.innerHTML = `
-        <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level 2 — Fill in the Blank (Voice) • ${commIdx+1}/${blanks.length}</span></div>
+      const safeS = item.sentence.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const safeF = item.full.toLowerCase().replace(/'/g,"\\'");
+      const safeA = item.answer.toLowerCase().replace(/'/g,"\\'");
+      ca.innerHTML = buildVoiceBar() + `
+        <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level 2 — Fill in the Blank • ${commIdx+1}/${blanks.length}</span></div>
         <div class="comm-card">
-          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🔊 AI is reading the sentence with a blank. <em>Speak the full complete sentence aloud:</em></div>
+          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🔊 Listen, then speak the <strong>complete sentence</strong> filling in the blank:</div>
           <div class="comm-sentence">${display}</div>
-          <div style="color:var(--muted);font-size:.88rem;margin-top:8px">Expected: <strong style="color:var(--sky)">"${htmlEsc(item.full)}"</strong></div>
           <div class="comm-actions">
-            <button class="speak-btn btn-play-tts" onclick="playTTS('${item.sentence.replace(/'/g,"\\'")}')">🔊 Hear Sentence</button>
-            <button class="speak-btn btn-record" id="blankRecBtn" onclick="startBlankRecording('${item.full.toLowerCase().replace(/'/g,"\\'")}','${item.answer.toLowerCase()}')">🎙️ Speak Answer (1 Attempt)</button>
+            <button class="speak-btn btn-play-tts" onclick="playTTS('${safeS}')">🔊 Hear Sentence</button>
+            <button class="speak-btn btn-replay" onclick="replayTTS()">↩ Replay</button>
+            <button class="speak-btn btn-record" id="blankRecBtn" onclick="startBlankRecording('${safeF}','${safeA}')">🎙️ Speak Answer (1 Attempt)</button>
             <div class="recording-indicator" id="blankRecInd"><div class="rec-dot"></div> Recording…</div>
+            <div class="processing-indicator" id="blankProcInd"><div class="proc-spinner"></div> Processing…</div>
           </div>
         </div>
         <div class="accuracy-box" id="blankAccBox">
           <div style="display:flex;justify-content:space-between">
-            <div>
-              <div style="color:var(--muted);font-size:.82rem">Result</div>
-              <div class="accuracy-score" id="blankScore">—</div>
-            </div>
+            <div><div style="color:var(--muted);font-size:.82rem">Result</div><div class="accuracy-score" id="blankScore">—</div></div>
             <div id="blankEmoji" style="font-size:2.5rem">🎯</div>
           </div>
           <div class="transcript-text">You said: "<span id="blankTrans">—</span>"</div>
+          <div id="blankCorrectAns" style="margin-top:10px;padding:12px 16px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);border-radius:10px;font-size:.9rem;display:none">
+            ✅ Correct Answer: <strong style="color:var(--sky)">"${htmlEsc(item.full)}"</strong>
+          </div>
           <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextBlank(${blanks.length})">Next →</button>
         </div>`;
+      setTimeout(() => playTTS(item.sentence), 600);
     }
-
-    window.playTTS = function(sentence) {
-      if (!window.speechSynthesis) { alert('Text-to-speech not supported.'); return; }
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(sentence);
-      utt.lang = 'en-US'; utt.rate = 0.85;
-      window.speechSynthesis.speak(utt);
-    };
 
     window.startBlankRecording = function(full, answer) {
       const btn = document.getElementById('blankRecBtn');
-      btn.disabled = true; // ONE ATTEMPT ONLY
+      btn.disabled = true;
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        alert('Speech recognition needs Chrome.'); btn.disabled=false; return;
+        alert('Speech recognition needs Chrome.'); btn.disabled = false; return;
       }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
-      recognition.lang = 'en-US';
+      recognition.lang = 'en-IN';
       document.getElementById('blankRecInd').classList.add('active');
       recognition.onresult = e => {
-        const transcript = e.results[0][0].transcript.toLowerCase().trim();
-        const correct = transcript.includes(answer);
-        const acc = correct ? 100 : calcAccuracy(transcript, full);
-        document.getElementById('blankAccBox').style.display = 'block';
-        document.getElementById('blankScore').textContent = correct ? 'Correct ✅' : 'Incorrect ❌';
-        document.getElementById('blankScore').style.color = correct ? 'var(--green)' : 'var(--red)';
-        document.getElementById('blankEmoji').textContent = correct ? '🎉' : '😔';
-        document.getElementById('blankTrans').textContent = transcript;
-        if (correct) totalScore += 8;
+        document.getElementById('blankRecInd').classList.remove('active');
+        document.getElementById('blankProcInd').classList.add('active');
+        setTimeout(() => {
+          document.getElementById('blankProcInd').classList.remove('active');
+          const transcript = e.results[0][0].transcript.toLowerCase().trim();
+          const correct = transcript.includes(answer);
+          // Show result
+          document.getElementById('blankAccBox').style.display = 'block';
+          document.getElementById('blankScore').textContent = correct ? 'Correct ✅' : 'Incorrect ❌';
+          document.getElementById('blankScore').style.color = correct ? 'var(--green)' : 'var(--red)';
+          document.getElementById('blankEmoji').textContent = correct ? '🎉' : '😔';
+          document.getElementById('blankTrans').textContent = transcript || '(no speech detected)';
+          // ✅ Reveal answer ONLY AFTER submission
+          document.getElementById('blankCorrectAns').style.display = 'block';
+          if (correct) totalScore += 8;
+        }, 400);
       };
-      recognition.onerror = () => { document.getElementById('blankRecInd').classList.remove('active'); };
-      recognition.onend  = () => document.getElementById('blankRecInd').classList.remove('active');
+      recognition.onerror = (ev) => {
+        document.getElementById('blankRecInd').classList.remove('active');
+        document.getElementById('blankProcInd').classList.remove('active');
+        document.getElementById('blankAccBox').style.display = 'block';
+        document.getElementById('blankScore').textContent = ev.error === 'no-speech' ? 'No speech detected ❌' : 'Error ❌';
+        document.getElementById('blankScore').style.color = 'var(--red)';
+        document.getElementById('blankCorrectAns').style.display = 'block';
+      };
+      recognition.onend = () => document.getElementById('blankRecInd').classList.remove('active');
       recognition.start();
     };
 
