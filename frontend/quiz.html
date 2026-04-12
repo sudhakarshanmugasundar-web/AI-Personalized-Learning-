@@ -1,917 +1,608 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Learning Module – AI Personalized Learning</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Pathway | AI Genius</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --bg: #0f0f13; --panel: #1a1a24; --accent: #6c63ff;
-      --sky: #38bdf8; --green: #22c55e; --red: #ef4444;
-      --amber: #f59e0b; --text: #ffffff; --muted: #a1a1aa;
-      --card: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.1);
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    body { font-family:'Inter',sans-serif; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; align-items:center; padding:20px; color:var(--text); }
 
-    /* ── NAV ── */
-    .page-header { width:100%; max-width:1200px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-    .page-header a { color:var(--muted); text-decoration:none; font-weight:600; font-size:.875rem; transition:color .2s; }
-    .page-header a:hover { color:var(--text); }
-    .user-pill { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:100px; padding:7px 14px; font-size:.82rem; color:var(--muted); text-decoration:none; transition:background .2s; }
-    .user-pill:hover { background:rgba(255,255,255,.12); }
-    .avatar-icon { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--sky)); display:flex; align-items:center; justify-content:center; font-size:13px; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #0a0a0c;
+      color: #fff;
+      min-height: 100vh;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-    /* ── STEPPER ── */
-    .stepper { width:100%; max-width:1200px; display:flex; justify-content:space-between; margin-bottom:24px; padding:0 4px; }
-    .step { display:flex; flex-direction:column; align-items:center; gap:6px; opacity:.4; transition:opacity .3s; flex:1; position:relative; }
-    .step.active { opacity:1; }
-    .step.completed { opacity:.75; }
-    .step::after { content:''; position:absolute; top:18px; left:calc(50% + 22px); right:calc(-50% + 22px); height:2px; background:var(--border); z-index:0; }
-    .step:last-child::after { display:none; }
-    .step-cir { width:36px; height:36px; border-radius:50%; background:var(--panel); border:2px solid rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; z-index:1; transition:all .3s; }
-    .step.active .step-cir { background:var(--accent); border-color:var(--accent); box-shadow:0 0 16px rgba(108,99,255,.5); }
-    .step.completed .step-cir { background:var(--green); border-color:var(--green); }
-    .step-lbl { font-size:.75rem; font-weight:600; }
+    .stepper {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      position: relative;
+    }
 
-    /* ── MAIN CARD ── */
-    .module-card { width:100%; max-width:1200px; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:32px; min-height:560px; display:flex; flex-direction:column; }
-    .content-area { flex:1; display:flex; flex-direction:column; }
+    .stepper::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 0;
+    }
 
-    /* ── TEACH ── */
-    .teach-title { font-size:1.9rem; font-weight:800; color:var(--sky); margin-bottom:12px; }
-    .teach-exp { font-size:1.05rem; line-height:1.7; color:rgba(255,255,255,.88); margin-bottom:24px; }
-    .yt-embed { width:100%; max-width:780px; aspect-ratio:16/9; border-radius:14px; border:none; margin-bottom:24px; }
-    .code-panel { display:flex; gap:20px; flex-wrap:wrap; margin-top:8px; }
-    .code-box { flex:1; min-width:280px; }
-    .code-box h4 { color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-    .code-block { background:#111827; padding:16px; border-radius:10px; font-family:'Courier New',monospace; color:#d4d4d4; overflow-x:auto; white-space:pre; border:1px solid rgba(255,255,255,.08); font-size:.9rem; line-height:1.6; }
+    .step {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.2);
+      text-transform: uppercase;
+      padding-top: 35px;
+    }
 
-    /* ── PRACTICE ── */
-    .q-meta { font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; font-size:.82rem; margin-bottom:16px; }
-    .q-progress { display:flex; gap:6px; margin-bottom:20px; }
-    .q-dot { width:10px; height:10px; border-radius:50%; background:var(--border); transition:background .3s; }
-    .q-dot.done { background:var(--green); }
-    .q-dot.active { background:var(--accent); }
-    .question-text { font-size:1.2rem; font-weight:700; line-height:1.5; margin-bottom:24px; white-space:pre-wrap; }
-    .options { display:flex; flex-direction:column; gap:12px; }
-    .opt-lbl { display:flex; align-items:center; gap:16px; padding:15px 20px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:all .2s; }
-    .opt-lbl:hover { background:rgba(108,99,255,.12); border-color:rgba(108,99,255,.35); transform:translateX(4px); }
-    .opt-lbl.selected { background:rgba(108,99,255,.2); border-color:var(--accent); }
-    .opt-lbl.correct { background:rgba(34,197,94,.12); border-color:var(--green); }
-    .opt-lbl.wrong { background:rgba(239,68,68,.1); border-color:var(--red); }
-    .opt-letter { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
-    .expl-box { margin-top:20px; padding:16px 20px; background:rgba(56,189,248,.1); border-left:4px solid var(--sky); border-radius:0 10px 10px 0; display:none; font-size:.93rem; line-height:1.5; }
+    .step::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1a1a1f;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
 
-    /* ── CODING ── */
-    .split-pane { display:flex; gap:20px; flex:1; min-height:480px; }
-    .left-pane { flex:1; background:rgba(0,0,0,.25); border:1px solid var(--border); border-radius:14px; padding:22px; overflow-y:auto; }
-    .right-pane { flex:1; display:flex; flex-direction:column; gap:14px; }
-    .prob-title { font-size:1.4rem; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .diff-badge { display:inline-block; padding:3px 10px; border-radius:100px; font-size:.72rem; font-weight:700; }
-    .diff-easy { background:rgba(34,197,94,.2); color:#4ade80; }
-    .diff-medium { background:rgba(250,204,21,.2); color:#fde047; }
-    .diff-hard { background:rgba(249,115,22,.2); color:#fb923c; }
-    .prob-sec { margin-bottom:18px; }
-    .prob-sec h4 { font-size:.8rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
-    .prob-sec p { font-size:.93rem; line-height:1.6; }
-    .prob-sec pre { background:rgba(0,0,0,.3); padding:10px 14px; border-radius:8px; font-family:monospace; font-size:.88rem; margin-top:4px; }
-    .test-cases { display:flex; flex-direction:column; gap:10px; }
-    .test-case { background:rgba(0,0,0,.25); border:1px solid var(--border); border-radius:10px; padding:12px; }
-    .test-case h5 { font-size:.78rem; color:var(--muted); margin-bottom:6px; text-transform:uppercase; }
-    .test-case .tc-row { display:flex; gap:8px; font-family:monospace; font-size:.85rem; }
-    .tc-label { color:var(--muted); min-width:50px; }
-    .tc-val { color:#d4d4d4; }
+    .step.active {
+      color: #8b5cf6;
+    }
 
-    /* Code Editor */
-    .editor-header { display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,.4); border:1px solid var(--border); border-bottom:none; border-radius:10px 10px 0 0; padding:10px 16px; font-size:.82rem; }
-    .lang-pill { background:rgba(108,99,255,.2); color:var(--accent); padding:3px 10px; border-radius:100px; font-weight:600; font-size:.75rem; }
-    .coding-area { flex:1; background:#1e1e2e; color:#d4d4d4; font-family:'Courier New',monospace; padding:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 10px 10px; outline:none; font-size:14px; resize:none; width:100%; min-height:240px; tab-size:4; }
-    .coding-area:focus { border-color:rgba(108,99,255,.4); }
-    .console-wrap { background:#0d0d0d; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .console-header { display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid var(--border); font-size:.78rem; color:var(--muted); }
-    .console-out { color:#d4d4d4; padding:12px 14px; font-family:monospace; min-height:70px; font-size:.88rem; white-space:pre-wrap; }
-    .code-actions { display:flex; gap:12px; }
+    .step.active::after {
+      border-color: #8b5cf6;
+      background: #8b5cf6;
+    }
 
-    /* Test results */
-    .tc-result { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
-    .tc-row-result { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-radius:8px; font-size:.83rem; }
-    .tc-pass { background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.25); color:#4ade80; }
-    .tc-fail { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); color:#f87171; }
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 28px;
+      padding: 40px;
+      width: 100%;
+      max-width: 900px;
+      min-height: 550px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+    }
 
-    /* ── COMMUNICATION ── */
-    .comm-card { background:linear-gradient(135deg,rgba(108,99,255,.12),rgba(56,189,248,.08)); border:1px solid rgba(108,99,255,.25); border-radius:18px; padding:28px; margin-bottom:20px; }
-    .comm-sentence { font-size:1.4rem; font-weight:700; line-height:1.6; color:white; margin:16px 0; background:rgba(0,0,0,.3); padding:20px 24px; border-radius:12px; border-left:4px solid var(--accent); }
-    .comm-blank-word { color:var(--amber); font-weight:800; }
-    .comm-actions { display:flex; gap:14px; flex-wrap:wrap; margin-top:20px; align-items:center; }
-    .speak-btn { display:flex; align-items:center; gap:10px; padding:13px 24px; border-radius:12px; font-size:.95rem; font-weight:700; cursor:pointer; border:none; font-family:'Inter',sans-serif; transition:all .2s; }
-    .btn-record { background:linear-gradient(135deg,#ef4444,#dc2626); color:white; }
-    .btn-record:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(239,68,68,.4); }
-    .btn-record:disabled { opacity:.5; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
-    .btn-stop { background:rgba(255,255,255,.1); color:white; border:1px solid var(--border); }
-    .btn-play-tts { background:linear-gradient(135deg,var(--sky),#0ea5e9); color:white; }
-    .btn-play-tts:hover { transform:translateY(-2px); }
-    .btn-play-tts:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-    .btn-replay { background:rgba(108,99,255,.2); color:var(--accent); border:1px solid rgba(108,99,255,.4); }
-    .btn-replay:hover { background:rgba(108,99,255,.35); transform:translateY(-2px); }
-    .recording-indicator { display:none; align-items:center; gap:8px; color:#ef4444; font-weight:600; font-size:.88rem; }
-    .recording-indicator.active { display:flex; }
-    .rec-dot { width:10px; height:10px; border-radius:50%; background:#ef4444; animation:blink .8s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-    .processing-indicator { display:none; align-items:center; gap:8px; color:var(--sky); font-weight:600; font-size:.88rem; }
-    .processing-indicator.active { display:flex; }
-    .proc-spinner { width:14px; height:14px; border:2px solid rgba(56,189,248,.3); border-top-color:var(--sky); border-radius:50%; animation:spin .7s linear infinite; }
-    .accuracy-box { margin-top:20px; padding:20px; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3); border-radius:14px; display:none; }
-    .accuracy-score { font-size:2.5rem; font-weight:800; color:var(--green); }
-    .transcript-text { color:rgba(255,255,255,.7); margin-top:10px; font-size:.9rem; }
-    .acc-progress { height:8px; background:rgba(255,255,255,.1); border-radius:100px; margin:12px 0; overflow:hidden; }
-    .acc-bar { height:100%; border-radius:100px; transition:width 1s ease; }
-    /* Voice Settings */
-    .voice-settings { display:flex; align-items:center; gap:16px; flex-wrap:wrap; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:12px; padding:12px 18px; margin-bottom:20px; }
-    .voice-settings label { font-size:.78rem; color:var(--muted); font-weight:600; white-space:nowrap; }
-    .voice-settings select, .voice-settings input[type=range] { background:rgba(0,0,0,.3); border:1px solid var(--border); border-radius:7px; color:white; padding:4px 8px; font-size:.8rem; font-family:'Inter',sans-serif; cursor:pointer; }
-    .vs-group { display:flex; align-items:center; gap:8px; }
-    .vs-val { font-size:.82rem; color:var(--sky); font-weight:700; min-width:32px; }
+    .phase {
+      display: none;
+      animation: fadeIn 0.4s ease;
+      flex: 1;
+    }
 
-    /* ── BUTTONS ── */
-    .action-bar { display:flex; justify-content:flex-end; margin-top:28px; gap:14px; padding-top:20px; border-top:1px solid rgba(255,255,255,.05); }
-    .btn { padding:12px 28px; border-radius:12px; font-size:1rem; font-weight:600; cursor:pointer; border:none; transition:all .2s; font-family:'Inter',sans-serif; display:inline-flex; align-items:center; gap:8px; }
-    .btn-outline { background:rgba(255,255,255,.06); color:white; border:1px solid var(--border); }
-    .btn-outline:hover { background:rgba(255,255,255,.12); }
-    .btn-primary { background:var(--accent); color:white; }
-    .btn-primary:hover { background:#5a52e0; transform:translateY(-2px); box-shadow:0 8px 24px rgba(108,99,255,.4); }
-    .btn-success { background:var(--green); color:white; }
-    .btn-success:hover { background:#16a34a; transform:translateY(-2px); }
-    .btn-run { background:rgba(56,189,248,.15); color:var(--sky); border:1px solid rgba(56,189,248,.3); }
-    .btn-run:hover { background:rgba(56,189,248,.25); }
-    .btn-submit { background:linear-gradient(135deg,var(--green),#16a34a); color:white; }
-    .btn-submit:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(34,197,94,.35); }
-    .btn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; box-shadow:none !important; pointer-events:none; }
-    #loading { text-align:center; padding:60px; font-size:1.1rem; color:var(--muted); }
-    .spinner { width:36px; height:36px; border:3px solid rgba(108,99,255,.2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    .phase.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .txt {
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      font-size: 1.05rem;
+    }
+
+    /* MCQ */
+    .opt {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 600;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .opt:hover {
+      background: rgba(139, 92, 246, 0.05);
+      border-color: #8b5cf6;
+    }
+
+    .opt.correct {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
+    .opt.wrong {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    /* Code Editor Area */
+    .ide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    select {
+      background: #1a1a1f;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .editor-container {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    textarea {
+      width: 100%;
+      height: 280px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Fira Code', monospace;
+      padding: 20px;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.2s;
+      border: none;
+      font-size: 0.85rem;
+    }
+
+    .btn-outline {
+      background: #1a1a1f;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-primary {
+      background: #8b5cf6;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(139, 92, 246, 0.2);
+    }
+
+    .btn-submit {
+      background: #10b981;
+      color: #fff;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .console {
+      margin-top: 20px;
+      background: #000;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      min-height: 80px;
+    }
+
+    .console b {
+      color: #8b5cf6;
+    }
+
+    .out-msg {
+      margin-top: 8px;
+      font-weight: 700;
+    }
+
+    .out-succ {
+      color: #10b981;
+    }
+
+    .out-err {
+      color: #ef4444;
+    }
+
+    #nextBtn {
+      margin-top: auto;
+      align-self: flex-end;
+    }
   </style>
 </head>
+
 <body>
-  <div class="page-header">
-    <a href="levels.html" id="backLink">← Back to Levels</a>
-    <a href="profile.html" class="user-pill">
-      <div class="avatar-icon">🎓</div>
-      <span id="userName">Student</span>
-    </a>
+
+  <div class="stepper">
+    <div class="step active" id="s1">Theory</div>
+    <div class="step" id="s2">Practice</div>
+    <div class="step" id="s3">Coding</div>
+    <div class="step" id="s4">Analysis</div>
   </div>
 
-  <div class="stepper" id="stepper">
-    <div class="step active" id="step-teach"><div class="step-cir">1</div><div class="step-lbl">Teach</div></div>
-    <div class="step" id="step-practice"><div class="step-cir">2</div><div class="step-lbl">Practice</div></div>
-    <div class="step" id="step-coding"><div class="step-cir">3</div><div class="step-lbl">Coding</div></div>
-    <div class="step" id="step-eval"><div class="step-cir">4</div><div class="step-lbl">Result</div></div>
-  </div>
-
-  <div class="module-card">
-    <div id="loading"><div class="spinner"></div>Loading personalized module…</div>
-    <div class="content-area" id="contentArea" style="display:none;"></div>
-    <div class="action-bar" id="actionBar" style="display:none;">
-      <button class="btn btn-primary" id="nextBtn" style="display:none;">Continue →</button>
+  <div class="card">
+    <!-- Phase 1: Teach -->
+    <div class="phase active" id="p1">
+      <h2 id="tTitle">Loading...</h2>
+      <p class="txt" id="tExp"></p>
+      <div
+        style="background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.05);">
+        <code id="tCode" style="font-family:monospace; color:#8b5cf6;"></code>
+      </div>
     </div>
+
+    <!-- Phase 2: MCQ -->
+    <div class="phase" id="p2">
+      <div id="mCount" style="color:#8b5cf6; font-size:0.7rem; font-weight:800; margin-bottom:10px;">QUESTION 1/3</div>
+      <h2 id="mText">...</h2>
+      <div id="mOpts" style="margin-top:20px;"></div>
+    </div>
+
+    <!-- Phase 3: Coding -->
+    <div class="phase" id="p3">
+      <div class="ide-header">
+        <h2 id="cTitle">Problem</h2>
+        <select id="langSel" onchange="updateTemplate()">
+          <option value="java">Java</option>
+          <option value="python">Python</option>
+          <option value="c">C</option>
+          <option value="cpp">C++</option>
+        </select>
+      </div>
+      <p class="txt" id="cGoal" style="margin-bottom:15px;"></p>
+
+      <div class="editor-container">
+        <textarea id="editor" spellcheck="false"></textarea>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-outline" onclick="compileCode()">Compile</button>
+        <button class="btn btn-outline" onclick="runCode()">Run</button>
+        <button class="btn btn-primary btn-submit" id="submitBtn" disabled onclick="submitCode()">Submit
+          Solution</button>
+      </div>
+
+      <div class="console" id="con">
+        <b>Console:</b>
+        <div id="conOut" style="margin-top:5px;">Ready to compile...</div>
+        <div id="testRes" class="out-msg"></div>
+      </div>
+    </div>
+
+    <!-- Phase 4: Result -->
+    <div class="phase" id="p4" style="text-align:center; justify-content:center;">
+      <div style="font-size:4.5rem; font-weight:900; color:#8b5cf6;" id="resScore">0%</div>
+      <h3 style="font-size:1.6rem; margin:15px 0;" id="resTitle">Evaluation: Learner</h3>
+      <p id="resMsg" style="color:rgba(255,255,255,0.4); max-width:500px; margin:0 auto;"></p>
+      <button class="btn btn-primary" style="margin-top:30px;" onclick="finishLevel()">Finish & Continue →</button>
+    </div>
+
+    <button id="nextBtn" class="btn btn-primary" onclick="nextPhase()">Start Practice →</button>
   </div>
 
-  <script src="chatbot.js"></script>
+  <script src="utils.js"></script>
   <script>
-    const user = localStorage.getItem('ailearn_user') || 'Student';
-    document.getElementById('userName').textContent = user.split(' ')[0];
-    if (!localStorage.getItem('ailearn_loggedIn')) window.location.href = 'login.html';
+    console.log("Quiz JS Loaded");
 
-    const params  = new URLSearchParams(window.location.search);
-    const courseId = params.get('course') || 'java';
-    const levelId  = parseInt(params.get('level') || '1');
-    document.getElementById('backLink').href = `levels.html?course=${courseId}`;
+    const params = new URLSearchParams(window.location.search);
+    const course = params.get('course') || 'java';
+    const level = params.get('level') || '1';
 
-    let modData = null;
-    let stage = 0;       // 0=teach 1=practice 2=coding 3=eval
-    let pracIdx = 0;
-    let codeIdx = 0;
-    let totalScore = 0, maxScore = 0;
-    let practiceAnswered = false;
-    const isEnglish = courseId === 'english';
+    let data = null;
+    let phase = 1;
+    let score = 0;
+    let currentQ = 0;
+    let currentCodeQ = 0;
+    let codePassed = false;
 
-    // ── LOAD ──
-    async function loadModule() {
+    // ================= INIT =================
+    async function init() {
       try {
-        const res = await fetch(`http://localhost:8080/api/module?course=${courseId}&level=${levelId}`);
-        modData = await res.json();
-        maxScore = modData.practice.length * 10;
-        if (!isEnglish) modData.coding.forEach(c => {
-          maxScore += c.difficulty==='easy'?10:c.difficulty==='medium'?20:c.difficulty==='hard'?30:40;
-        });
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('contentArea').style.display = 'block';
-        document.getElementById('actionBar').style.display = 'flex';
-        renderStage();
-      } catch(err) {
-        document.getElementById('loading').innerHTML = `<div style="color:var(--red)">⚠ Could not load module. Ensure the backend is running on port 8080.</div>`;
+        const res = await fetch(`http://localhost:5001/api/module?course=${course}&level=${level}`);
+        data = await res.json();
+
+        document.getElementById('tTitle').innerText = data.teach.title;
+        document.getElementById('tExp').innerText = data.teach.explanation;
+        document.getElementById('tCode').innerText = data.teach.exampleCode;
+
+        updateTemplate();
+      } catch (err) {
+        console.error("INIT ERROR:", err);
+        document.getElementById('tTitle').innerText = "Failed to load content";
       }
     }
 
-    function updateStepper() {
-      ['teach','practice','coding','eval'].forEach((s,i) => {
-        const el = document.getElementById('step-'+s);
-        el.className = 'step' + (i<stage?' completed':i===stage?' active':'');
-      });
+    // ================= TEMPLATE =================
+    function updateTemplate() {
+      if (!data) return;
+      const lang = document.getElementById('langSel').value;
+      const editor = document.getElementById('editor');
+      editor.value = "";
+      editor.placeholder = "// Write your " + lang.toUpperCase() + " code here...";
     }
 
-    const nextBtn = document.getElementById('nextBtn');
-    nextBtn.onclick = handleNext;
-
-    // ─── RENDER STAGES ──────────────────────────────────────────────────
-    function renderStage() {
-      updateStepper();
-      const ca = document.getElementById('contentArea');
-      ca.innerHTML = '';
-      nextBtn.style.display = 'inline-flex';
-      nextBtn.disabled = false;
-      nextBtn.textContent = 'Continue →';
-
-      if (stage === 0) renderTeach(ca);
-      else if (stage === 1) renderPractice(ca);
-      else if (stage === 2) {
-        if (isEnglish) renderCommunication(ca);
-        else renderCoding(ca);
-      }
-      else if (stage === 3) renderEval(ca);
+    // ================= PHASE =================
+    function nextPhase() {
+      if (phase >= 4) return;
+      phase++;
+      renderPhase();
     }
 
-    // ── TEACH ──
-    function renderTeach(ca) {
-      const t = modData.teach;
-      ca.innerHTML = `
-        <div class="teach-title">${t.title}</div>
-        <div class="teach-exp">${t.explanation}</div>
-        ${t.videoUrl ? `<iframe class="yt-embed" src="${t.videoUrl}" allowfullscreen></iframe>` : ''}
-        <div class="code-panel">
-          <div class="code-box"><h4>Syntax Pattern</h4><div class="code-block">${htmlEsc(t.syntax)}</div></div>
-          <div class="code-box"><h4>Example Code</h4><div class="code-block">${htmlEsc(t.exampleCode)}</div></div>
-        </div>`;
-    }
+    function renderPhase() {
+      document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
 
-    // ── PRACTICE ──
-    function renderPractice(ca) {
-      practiceAnswered = false;
-      const q = modData.practice[pracIdx];
-      nextBtn.style.display = 'none';
+      document.getElementById(`p${phase}`).classList.add('active');
+      document.getElementById(`s${phase}`).classList.add('active');
 
-      // Progress dots
-      let dots = modData.practice.map((_,i) =>
-        `<div class="q-dot ${i<pracIdx?'done':i===pracIdx?'active':''}"></div>`).join('');
+      const btn = document.getElementById('nextBtn');
 
-      let opts = modData.practice[pracIdx].options.map((o,i) =>
-        `<div class="opt-lbl" id="opt${i}" onclick="selectOpt(this,${i})">
-          <span class="opt-letter">${String.fromCharCode(65+i)}</span>
-          ${htmlEsc(o)}
-        </div>`).join('');
-
-      ca.innerHTML = `
-        <div class="q-meta">Practice — Question ${pracIdx+1} of ${modData.practice.length}</div>
-        <div class="q-progress">${dots}</div>
-        <div class="question-text">${htmlEsc(q.question)}</div>
-        <div class="options" id="pracOptions">${opts}</div>
-        <div class="expl-box" id="pracExpl">
-          <strong>💡 Explanation:</strong> ${htmlEsc(q.explanation)}
-        </div>`;
-    }
-
-    window.selectOpt = function(el, idx) {
-      if (practiceAnswered) return;
-      practiceAnswered = true;
-      const q = modData.practice[pracIdx];
-      // Disable all options
-      document.querySelectorAll('.opt-lbl').forEach(o => o.style.pointerEvents='none');
-      if (idx === q.correctIndex) {
-        el.classList.add('correct'); totalScore += 10;
-      } else {
-        el.classList.add('wrong');
-        document.getElementById('opt'+q.correctIndex).classList.add('correct');
+      if (phase === 2) {
+        loadMCQ();
+        btn.style.display = 'none';
       }
-      document.getElementById('pracExpl').style.display = 'block';
-      nextBtn.style.display = 'inline-flex';
-    };
-
-    // ── CODING (LeetCode Style) ──
-    function renderCoding(ca) {
-      nextBtn.style.display = 'none';
-      const q = modData.coding[codeIdx];
-      const lang = courseId === 'python' ? 'Python3' : 'Java';
-      const diffMap = {easy:'diff-easy',medium:'diff-medium',hard:'diff-hard','very-hard':'diff-hard'};
-      const placeholder = courseId==='python'
-        ? `# Write your Python solution here\nn = int(input())\n# your code\n`
-        : `import java.util.Scanner;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // your code here\n    }\n}`;
-
-      // Build test cases display (show all)
-      const tc1 = `<div class="test-case"><h5>Test Case 1</h5><div class="tc-row"><span class="tc-label">Input:</span><span class="tc-val">${htmlEsc(q.testCaseIn)}</span></div><div class="tc-row"><span class="tc-label">Output:</span><span class="tc-val">${htmlEsc(q.testCaseOut)}</span></div></div>`;
-
-      ca.innerHTML = `
-        <div class="split-pane">
-          <div class="left-pane">
-            <div class="prob-title">${codeIdx+1}. ${htmlEsc(q.title)} <span class="diff-badge ${diffMap[q.difficulty]||'diff-medium'}">${q.difficulty.toUpperCase()}</span></div>
-            <div class="prob-sec"><p>${htmlEsc(q.question)}</p></div>
-            <div class="prob-sec"><h4>Input Format</h4><p>${htmlEsc(q.inputFormat)}</p></div>
-            <div class="prob-sec"><h4>Output Format</h4><p>${htmlEsc(q.outputFormat)}</p></div>
-            <div class="prob-sec"><h4>Constraints</h4><pre>${htmlEsc(q.constraints)}</pre></div>
-            <div class="prob-sec"><h4>Test Cases (All must pass)</h4><div class="test-cases">${tc1}</div></div>
-          </div>
-          <div class="right-pane">
-            <div class="editor-header">
-              <span>Code Editor</span><span class="lang-pill">${lang}</span>
-            </div>
-            <textarea class="coding-area" id="codeEditor" spellcheck="false" placeholder="${placeholder}"></textarea>
-            <div class="console-wrap">
-              <div class="console-header">
-                <span>Console Output</span>
-                <span id="tcStatus" style="font-weight:600;"></span>
-              </div>
-              <div class="console-out" id="consoleOut">Run your code to see output here…</div>
-            </div>
-            <div class="code-actions">
-              <button class="btn btn-run" id="runCodeBtn">▶ Run Code</button>
-              <button class="btn btn-submit" id="submitCodeBtn">Submit ✓</button>
-            </div>
-            <div id="tcResults" class="tc-result"></div>
-          </div>
-        </div>`;
-
-      document.getElementById('runCodeBtn').onclick = runCode;
-      document.getElementById('submitCodeBtn').onclick = submitCode;
-
-      // Allow Tab key in editor
-      document.getElementById('codeEditor').addEventListener('keydown', e => {
-        if (e.key === 'Tab') {
-          e.preventDefault();
-          const ta = e.target, s=ta.selectionStart, en=ta.selectionEnd;
-          ta.value = ta.value.substring(0,s) + '    ' + ta.value.substring(en);
-          ta.selectionStart = ta.selectionEnd = s+4;
-        }
-      });
-    }
-
-    // ── RUN CODE (simulated execution) ──
-    function runCode() {
-      const code = document.getElementById('codeEditor').value;
-      const out  = document.getElementById('consoleOut');
-      const q    = modData.coding[codeIdx];
-
-      if (code.trim().length === 0) {
-        out.innerHTML = `<span style="color:var(--red)">⚠ Error: No code written.</span>`;
-        return;
+      if (phase === 3) {
+        loadCoding();
+        btn.style.display = 'none';
       }
-      // Check for minimal structure
-      const {ok, error} = validateCodeStructure(code);
-      if (!ok) {
-        out.innerHTML = `<span style="color:var(--red)">Compile Error: ${error}</span>`;
-        return;
-      }
-      // Simulate run with test case
-      out.innerHTML = `<span style="color:var(--muted)">Running test case 1…\nInput: ${htmlEsc(q.testCaseIn)}\n\nOutput:\n</span>${htmlEsc(simulateOutput(code, q))}\n\n<span style="color:var(--muted)">Execution Time: ${8+Math.floor(Math.random()*20)}ms</span>`;
-    }
-
-    // ── SUBMIT CODE (Strict LeetCode Validation) ──
-    function submitCode() {
-      const code = document.getElementById('codeEditor').value.trim();
-      const out   = document.getElementById('consoleOut');
-      const tcRes = document.getElementById('tcResults');
-      const tcSt  = document.getElementById('tcStatus');
-      const q     = modData.coding[codeIdx];
-
-      // STEP 1: Not empty
-      if (code.length === 0) {
-        showConsoleError(out, 'Compile Error: Code cannot be empty.');
-        return;
-      }
-
-      // STEP 2: Structure validation
-      const {ok, error} = validateCodeStructure(code);
-      if (!ok) {
-        showConsoleError(out, `Compile Error: ${error}`);
-        tcSt.innerHTML = `<span style="color:var(--red)">✗ Compile Error</span>`;
-        return;
-      }
-
-      // STEP 3: Minimum complexity check (not trivial)
-      if (code.length < 40) {
-        showConsoleError(out, 'Compile Error: Solution is incomplete. Write a full program.');
-        tcSt.innerHTML = `<span style="color:var(--red)">✗ Incomplete</span>`;
-        return;
-      }
-
-      // STEP 4: Logic check — verify correctness against test cases
-      const testResult = runTestCases(code, q);
-      tcRes.innerHTML = '';
-
-      let allPassed = true;
-      testResult.forEach((tc, i) => {
-        if (!tc.passed) allPassed = false;
-        tcRes.innerHTML += `
-          <div class="tc-row-result ${tc.passed?'tc-pass':'tc-fail'}">
-            <span>Test ${i+1}: Input="${htmlEsc(tc.input)}"</span>
-            <span>${tc.passed?'✅ Passed':'❌ Failed (expected: '+htmlEsc(tc.expected)+')'}</span>
-          </div>`;
-      });
-
-      if (allPassed) {
-        out.innerHTML = `<span style="color:var(--green)">✅ Accepted — Passed all ${testResult.length} test cases!\n\nExecution Time: ${8+Math.floor(Math.random()*15)}ms\nMemory: ${12+Math.floor(Math.random()*8)} MB</span>`;
-        tcSt.innerHTML = `<span style="color:var(--green)">✅ ${testResult.length}/${testResult.length} Passed</span>`;
-
-        const pts = q.difficulty==='easy'?10:q.difficulty==='medium'?20:q.difficulty==='hard'?30:40;
-        totalScore += pts;
-        // Move to next problem after 2s
-        setTimeout(() => {
-          codeIdx++;
-          if (codeIdx >= modData.coding.length) { stage=3; renderStage(); }
-          else renderStage();
-        }, 2000);
-      } else {
-        const failedTc = testResult.find(t => !t.passed);
-        out.innerHTML = `<span style="color:var(--red)">❌ Wrong Answer!\n\nTest case failed:\nInput:    ${htmlEsc(failedTc.input)}\nExpected: ${htmlEsc(failedTc.expected)}\nGot:      ${htmlEsc(failedTc.got)}\n\nHint: Check your logic carefully.</span>`;
-        tcSt.innerHTML = `<span style="color:var(--red)">✗ Wrong Answer</span>`;
+      if (phase === 4) {
+        btn.style.display = 'none';
       }
     }
 
-    // ── CODE STRUCTURE VALIDATOR ──
-    function validateCodeStructure(code) {
-      const py = courseId === 'python';
-      if (py) {
-        // Python: must have at least a for/while/if or function definition beyond just a word
-        if (/^print\s*\(\s*\)\s*$/.test(code.trim()))
-          return {ok:false, error:"print() with no logic is not a valid solution."};
-        if (code.split('\n').filter(l=>l.trim().length>0).length < 2)
-          return {ok:false, error:"Solution must have at least 2 meaningful lines of code."};
-        // Check for unclosed parens
-        const opens = (code.match(/\(/g)||[]).length;
-        const closes = (code.match(/\)/g)||[]).length;
-        if (opens !== closes) return {ok:false, error:"Syntax Error: Mismatched parentheses."};
-        return {ok:true};
-      } else {
-        // Java: must have main method
-        if (!code.includes('main')) return {ok:false, error:"Java solution must have a main method."};
-        if (!code.includes('{') || !code.includes('}')) return {ok:false, error:"Syntax Error: Missing curly braces."};
-        // Parens check
-        const opens = (code.match(/\{/g)||[]).length;
-        const closes = (code.match(/\}/g)||[]).length;
-        if (opens !== closes) return {ok:false, error:"Syntax Error: Mismatched curly braces."};
-        return {ok:true};
-      }
-    }
+    // ================= MCQ =================
+    function loadMCQ() {
+      const q = data.practice[currentQ];
 
-    // ── SIMULATE OUTPUT & TEST CASES ──
-    // This does keyword-based logic matching to validate solutions
-    function runTestCases(code, q) {
-      const results = [];
-      const lc = code.toLowerCase();
-      const title = q.title.toLowerCase();
-      const expected = q.testCaseOut.replace(/\\n/g,'\n').trim();
-      const input = q.testCaseIn;
+      document.getElementById('mCount').innerText =
+        `QUESTION ${currentQ + 1}/${data.practice.length}`;
+      document.getElementById('mText').innerText = q.question;
 
-      // Determine if the code logically addresses the problem
-      let logicOk = assessLogic(lc, title);
+      const list = document.getElementById('mOpts');
+      list.innerHTML = '';
 
-      results.push({
-        input: input,
-        expected: expected,
-        got: logicOk ? expected : deriveWrongOutput(expected),
-        passed: logicOk
-      });
-      return results;
-    }
+      q.options.forEach((opt, idx) => {
+        const div = document.createElement('div');
+        div.className = 'opt';
+        div.innerText = opt;
 
-    function assessLogic(code, title) {
-      // Check that the code contains keywords appropriate for the problem
-      if (title.includes('sum')) return code.includes('sum') || code.includes('+') || code.includes('+=');
-      if (title.includes('even') || title.includes('odd')) return code.includes('%') || code.includes('2');
-      if (title.includes('factorial')) return (code.includes('*') || code.includes('factorial')) && (code.includes('for') || code.includes('while') || code.includes('recur') || code.includes('fact'));
-      if (title.includes('reverse')) return code.includes('reverse') || (code.includes('%') && code.includes('/')) || code.includes('[::-1]') || code.includes('stringbuilder') || code.includes('reversed');
-      if (title.includes('palindrome')) return code.includes('palindrome') || code.includes('[::-1]') || code.includes('reverse') || code.includes('equals');
-      if (title.includes('fibonacci')) return code.includes('fibonacci') || (code.includes('+') && (code.includes('prev') || code.includes('a') || code.includes('fib')));
-      if (title.includes('prime')) return code.includes('prime') || (code.includes('%') && (code.includes('for') || code.includes('while')));
-      if (title.includes('array') || title.includes('max') || title.includes('min') || title.includes('maximum') || title.includes('minimum')) return code.includes('max') || code.includes('min') || code.includes('[') || code.includes('array');
-      if (title.includes('vowel') || title.includes('word') || title.includes('count')) return code.includes('count') || code.includes('len') || code.includes('length') || code.includes('++');
-      if (title.includes('pattern') || title.includes('triangle') || title.includes('star')) return (code.includes('for') || code.includes('while')) && (code.includes('*') || code.includes('print'));
-      // Generic: code has a loop or conditional
-      return code.includes('for') || code.includes('while') || code.includes('if');
-    }
+        div.onclick = () => {
+          const all = list.querySelectorAll('.opt');
+          all.forEach(d => d.style.pointerEvents = 'none');
 
-    function simulateOutput(code, q) {
-      const lc = code.toLowerCase();
-      const logicOk = assessLogic(lc, q.title.toLowerCase());
-      return logicOk ? q.testCaseOut.replace(/\\n/g,'\n') : '(run output)';
-    }
-
-    function deriveWrongOutput(expected) {
-      // Return a slightly wrong output for display
-      if (!isNaN(expected)) return String(parseInt(expected)+1);
-      return 'Wrong output';
-    }
-
-    function showConsoleError(out, msg) {
-      out.innerHTML = `<span style="color:var(--red)">${htmlEsc(msg)}</span>`;
-    }
-
-    // ── AI VOICE SYSTEM ──
-    const voiceSettings = { rate: 0.9, gender: 'female', volume: 1.0 };
-    let lastTTSSentence = '';
-
-    function getBestVoice(gender) {
-      const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-      const enVoices = voices.filter(v => v.lang && v.lang.startsWith('en'));
-      if (gender === 'female') {
-        const f = enVoices.find(v => /samantha|karen|victoria|zira|moira|fiona|female|woman/i.test(v.name));
-        if (f) return f;
-      } else {
-        const m = enVoices.find(v => /alex|daniel|david|george|fred|male|man/i.test(v.name));
-        if (m) return m;
-      }
-      return enVoices[0] || voices[0] || null;
-    }
-
-    window.playTTS = async function(sentence) {
-      if (!sentence) return;
-      lastTTSSentence = sentence;
-
-      // Update button states
-      document.querySelectorAll('.btn-play-tts').forEach(b => {
-        b.textContent = '🔊 Speaking…'; b.disabled = true;
-      });
-
-      const finishButton = () => document.querySelectorAll('.btn-play-tts').forEach(b => {
-        b.textContent = '🔊 Hear Sentence'; b.disabled = false;
-      });
-
-      // ── Try backend TTS (OpenAI) first ──
-      try {
-        const res = await fetch('http://localhost:8080/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: sentence, voice: voiceSettings.gender, speed: voiceSettings.rate })
-        });
-        const ct = res.headers.get('content-type') || '';
-        if (ct.includes('audio')) {
-          // Got real OpenAI audio
-          const blob = await res.blob();
-          const url  = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.volume = parseFloat(voiceSettings.volume);
-          audio.onended = () => { finishButton(); URL.revokeObjectURL(url); };
-          audio.onerror = () => { finishButton(); useBrowserTTS(sentence, finishButton); };
-          audio.play();
-          return;
-        }
-        // Fallback JSON received
-      } catch(e) { /* server not reachable, use browser */ }
-
-      // ── Browser TTS fallback ──
-      useBrowserTTS(sentence, finishButton);
-    };
-
-    function useBrowserTTS(sentence, onEnd) {
-      if (!window.speechSynthesis) { if(onEnd) onEnd(); return; }
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(sentence);
-      utt.lang   = 'en-IN';
-      utt.rate   = parseFloat(voiceSettings.rate);
-      utt.volume = parseFloat(voiceSettings.volume);
-      const applyVoice = () => {
-        const v = getBestVoice(voiceSettings.gender);
-        if (v) utt.voice = v;
-        utt.onend = onEnd || null;
-        window.speechSynthesis.speak(utt);
-      };
-      if (window.speechSynthesis.getVoices().length > 0) applyVoice();
-      else { window.speechSynthesis.onvoiceschanged = applyVoice; }
-    }
-
-    window.replayTTS = function() { if (lastTTSSentence) window.playTTS(lastTTSSentence); };
-
-    function buildVoiceBar() {
-      return `<div class="voice-settings">
-        <span style="font-size:.82rem;color:var(--sky);font-weight:700">🔊 Voice:</span>
-        <div class="vs-group">
-          <label>Speed</label>
-          <input type="range" min="0.8" max="1.2" step="0.1" value="${voiceSettings.rate}"
-            oninput="voiceSettings.rate=this.value;document.getElementById('vsRV').textContent=parseFloat(this.value).toFixed(1)+'x'">
-          <span class="vs-val" id="vsRV">${parseFloat(voiceSettings.rate).toFixed(1)}x</span>
-        </div>
-        <div class="vs-group">
-          <label>Voice</label>
-          <select onchange="voiceSettings.gender=this.value">
-            <option value="female" ${voiceSettings.gender==='female'?'selected':''}>Female</option>
-            <option value="male" ${voiceSettings.gender==='male'?'selected':''}>Male</option>
-          </select>
-        </div>
-        <div class="vs-group">
-          <label>Vol</label>
-          <input type="range" min="0.5" max="1.0" step="0.1" value="${voiceSettings.volume}"
-            oninput="voiceSettings.volume=this.value">
-        </div>
-      </div>`;
-    }
-
-    // ── COMMUNICATION (English) ──
-    function renderCommunication(ca) {
-      nextBtn.style.display = 'none';
-      const ed = modData.englishData;
-      if (!ed) { stage=3; renderStage(); return; }
-
-      if (ed.type === 'reading') renderReading(ca, ed);
-      else if (ed.type === 'fillblank') renderFillBlank(ca, ed);
-      else renderSpeaking(ca, ed);
-    }
-
-    let commIdx = 0;
-    let recognition = null;
-
-    function renderReading(ca, ed) {
-      commIdx = 0;
-      showReadingItem(ca, ed.sentences);
-    }
-
-    function showReadingItem(ca, sentences) {
-      const item = sentences[commIdx];
-      const safeText = item.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      ca.innerHTML = buildVoiceBar() + `
-        <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level 1 — Reading Practice • ${commIdx+1}/${sentences.length}</span></div>
-        <div class="comm-card">
-          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🔊 Listen to the AI voice, then record yourself reading aloud:</div>
-          <div class="comm-sentence">${htmlEsc(item.text)}</div>
-          <div class="comm-actions">
-            <button class="speak-btn btn-play-tts" onclick="playTTS('${safeText}')">🔊 Hear Sentence</button>
-            <button class="speak-btn btn-replay" onclick="replayTTS()">↩ Replay</button>
-            <button class="speak-btn btn-record" id="startRecBtn" onclick="startReading('${item.expected.replace(/'/g,"\\'")}')">🎙️ Speak Answer</button>
-            <div class="recording-indicator" id="recInd"><div class="rec-dot"></div> Recording…</div>
-            <div class="processing-indicator" id="procInd"><div class="proc-spinner"></div> Processing…</div>
-          </div>
-        </div>
-        <div class="accuracy-box" id="accBox">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><div style="color:var(--muted);font-size:.82rem">Accuracy Score</div><div class="accuracy-score" id="accScore">0%</div></div>
-            <div id="accEmoji" style="font-size:2.5rem">🎯</div>
-          </div>
-          <div class="acc-progress"><div class="acc-bar" id="accBar" style="width:0%;background:var(--green)"></div></div>
-          <div class="transcript-text">You said: "<span id="transText">—</span>"</div>
-          <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextReading(${sentences.length})">Next Sentence →</button>
-        </div>`;
-      setTimeout(() => playTTS(item.text), 600);
-    }
-
-    window.startReading = function(expected) {
-      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        alert('Speech recognition not supported. Please use Google Chrome.'); return;
-      }
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SR();
-      recognition.lang = 'en-IN';
-      recognition.interimResults = false;
-      document.getElementById('recInd').classList.add('active');
-      document.getElementById('startRecBtn').disabled = true;
-      recognition.onresult = e => {
-        document.getElementById('recInd').classList.remove('active');
-        document.getElementById('procInd').classList.add('active');
-        setTimeout(() => {
-          document.getElementById('procInd').classList.remove('active');
-          const transcript = e.results[0][0].transcript.toLowerCase().trim();
-          if (!transcript) {
-            document.getElementById('startRecBtn').disabled = false;
-            alert('⚠️ No speech detected. Please speak clearly and try again.'); return;
+          if (idx === q.correctIndex) {
+            div.classList.add('correct');
+            score += 15;
+          } else {
+            div.classList.add('wrong');
+            all[q.correctIndex].classList.add('correct');
           }
-          const acc = calcAccuracy(transcript, expected);
-          showAccuracy(acc, transcript);
-        }, 300);
-      };
-      recognition.onerror = (ev) => {
-        document.getElementById('recInd').classList.remove('active');
-        document.getElementById('procInd').classList.remove('active');
-        document.getElementById('startRecBtn').disabled = false;
-        if (ev.error === 'no-speech') alert('⚠️ No speech detected. Speak clearly into the microphone.');
-        else alert('Could not capture voice. Check microphone permissions and use Chrome.');
-      };
-      recognition.onend = () => document.getElementById('recInd').classList.remove('active');
-      recognition.start();
-    };
 
-    window.nextReading = function(total) {
-      commIdx++;
-      if (commIdx >= total) { totalScore += 15; stage=3; renderStage(); }
-      else showReadingItem(document.getElementById('contentArea'), modData.englishData.sentences);
-    };
+          setTimeout(() => {
+            if (currentQ < data.practice.length - 1) {
+              currentQ++;
+              loadMCQ();
+            } else {
+              nextPhase();
+            }
+          }, 1200);
+        };
 
-    function renderFillBlank(ca, ed) {
-      commIdx = 0;
-      showBlankItem(ca, ed.blanks);
+        list.appendChild(div);
+      });
     }
 
-    // ✅ FIXED: Answer hidden until AFTER user submits voice
-    function showBlankItem(ca, blanks) {
-      const item = blanks[commIdx];
-      const display = item.sentence.replace('______', '<span class="comm-blank-word">______</span>');
-      const safeS = item.sentence.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-      const safeF = item.full.toLowerCase().replace(/'/g,"\\'");
-      const safeA = item.answer.toLowerCase().replace(/'/g,"\\'");
-      ca.innerHTML = buildVoiceBar() + `
-        <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level 2 — Fill in the Blank • ${commIdx+1}/${blanks.length}</span></div>
-        <div class="comm-card">
-          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🔊 Listen, then speak the <strong>complete sentence</strong> filling in the blank:</div>
-          <div class="comm-sentence">${display}</div>
-          <div class="comm-actions">
-            <button class="speak-btn btn-play-tts" onclick="playTTS('${safeS}')">🔊 Hear Sentence</button>
-            <button class="speak-btn btn-replay" onclick="replayTTS()">↩ Replay</button>
-            <button class="speak-btn btn-record" id="blankRecBtn" onclick="startBlankRecording('${safeF}','${safeA}')">🎙️ Speak Answer (1 Attempt)</button>
-            <div class="recording-indicator" id="blankRecInd"><div class="rec-dot"></div> Recording…</div>
-            <div class="processing-indicator" id="blankProcInd"><div class="proc-spinner"></div> Processing…</div>
-          </div>
-        </div>
-        <div class="accuracy-box" id="blankAccBox">
-          <div style="display:flex;justify-content:space-between">
-            <div><div style="color:var(--muted);font-size:.82rem">Result</div><div class="accuracy-score" id="blankScore">—</div></div>
-            <div id="blankEmoji" style="font-size:2.5rem">🎯</div>
-          </div>
-          <div class="transcript-text">You said: "<span id="blankTrans">—</span>"</div>
-          <div id="blankCorrectAns" style="margin-top:10px;padding:12px 16px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);border-radius:10px;font-size:.9rem;display:none">
-            ✅ Correct Answer: <strong style="color:var(--sky)">"${htmlEsc(item.full)}"</strong>
-          </div>
-          <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextBlank(${blanks.length})">Next →</button>
-        </div>`;
-      setTimeout(() => playTTS(item.sentence), 600);
+    // ================= CODING =================
+    function loadCoding() {
+      const q = data.coding[currentCodeQ];
+
+      document.getElementById('cTitle').innerText = q.title;
+      document.getElementById('cGoal').innerText = q.question;
+
+      document.getElementById('conOut').innerText = "Ready to compile...";
+      document.getElementById('testRes').innerText = "";
+      document.getElementById('submitBtn').disabled = true;
+
+      document.getElementById('editor').value = "";
+      codePassed = false;
     }
 
-    window.startBlankRecording = function(full, answer) {
-      const btn = document.getElementById('blankRecBtn');
-      btn.disabled = true;
-      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        alert('Speech recognition needs Chrome.'); btn.disabled = false; return;
+    // ================= COMPILE =================
+    function compileCode() {
+      const editor = document.getElementById('editor').value;
+      const out = document.getElementById('conOut');
+      const res = document.getElementById('testRes');
+
+      out.innerText = "Compiling...";
+
+      setTimeout(() => {
+        if (editor.length < 10) {
+          out.innerText = "❌ Code too short";
+          res.innerText = "Compilation Failed";
+          res.className = "out-msg out-err";
+        } else {
+          out.innerText = "✅ Compilation Success";
+          res.innerText = "Compiled";
+          res.className = "out-msg out-succ";
+        }
+      }, 1000);
+    }
+
+    // ================= RUN =================
+    async function runCode() {
+      const code = document.getElementById('editor').value;
+      const language = document.getElementById('langSel').value;
+
+      const out = document.getElementById('conOut');
+      const res = document.getElementById('testRes');
+      const sBtn = document.getElementById('submitBtn');
+
+      if (!code || code.length < 5) {
+        out.innerText = "❌ Write code first";
+        return;
       }
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SR();
-      recognition.lang = 'en-IN';
-      document.getElementById('blankRecInd').classList.add('active');
-      recognition.onresult = e => {
-        document.getElementById('blankRecInd').classList.remove('active');
-        document.getElementById('blankProcInd').classList.add('active');
-        setTimeout(() => {
-          document.getElementById('blankProcInd').classList.remove('active');
-          const transcript = e.results[0][0].transcript.toLowerCase().trim();
-          const correct = transcript.includes(answer);
-          // Show result
-          document.getElementById('blankAccBox').style.display = 'block';
-          document.getElementById('blankScore').textContent = correct ? 'Correct ✅' : 'Incorrect ❌';
-          document.getElementById('blankScore').style.color = correct ? 'var(--green)' : 'var(--red)';
-          document.getElementById('blankEmoji').textContent = correct ? '🎉' : '😔';
-          document.getElementById('blankTrans').textContent = transcript || '(no speech detected)';
-          // ✅ Reveal answer ONLY AFTER submission
-          document.getElementById('blankCorrectAns').style.display = 'block';
-          if (correct) totalScore += 8;
-        }, 400);
-      };
-      recognition.onerror = (ev) => {
-        document.getElementById('blankRecInd').classList.remove('active');
-        document.getElementById('blankProcInd').classList.remove('active');
-        document.getElementById('blankAccBox').style.display = 'block';
-        document.getElementById('blankScore').textContent = ev.error === 'no-speech' ? 'No speech detected ❌' : 'Error ❌';
-        document.getElementById('blankScore').style.color = 'var(--red)';
-        document.getElementById('blankCorrectAns').style.display = 'block';
-      };
-      recognition.onend = () => document.getElementById('blankRecInd').classList.remove('active');
-      recognition.start();
-    };
 
-    window.nextBlank = function(total) {
-      commIdx++;
-      if (commIdx >= total) { stage=3; renderStage(); }
-      else showBlankItem(document.getElementById('contentArea'), modData.englishData.blanks);
-    };
+      out.innerText = "⏳ Running...";
+      res.innerText = "";
+      sBtn.disabled = true;
 
-    function renderSpeaking(ca, ed) {
-      commIdx = 0;
-      showSpeakingItem(ca, ed.topics);
-    }
-
-    function showSpeakingItem(ca, topics) {
-      const topic = topics[commIdx];
-      ca.innerHTML = `
-        <div style="margin-bottom:16px"><span style="color:var(--accent);font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:1px">Level ${levelId} — Topic Speaking • ${commIdx+1}/${topics.length}</span></div>
-        <div class="comm-card">
-          <div style="color:var(--muted);font-size:.88rem;margin-bottom:8px">🗣️ Speak for 30–45 seconds on this topic:</div>
-          <div class="comm-sentence">${htmlEsc(topic)}</div>
-          <div style="color:var(--muted);font-size:.85rem;margin-top:12px">Tip: Use Intro → 2-3 points → Conclusion structure</div>
-          <div class="comm-actions" style="margin-top:16px">
-            <button class="speak-btn btn-record" id="speakBtn" onclick="startTopicSpeech()">🎙️ Start Speaking</button>
-            <button class="speak-btn btn-stop" id="stopSpeakBtn" style="display:none" onclick="stopTopicSpeech()">⏹ Stop</button>
-            <div class="recording-indicator" id="speakRecInd"><div class="rec-dot"></div> Recording…</div>
-          </div>
-        </div>
-        <div class="accuracy-box" id="speakAccBox">
-          <div style="color:var(--muted);font-size:.82rem">Words spoken:</div>
-          <div class="accuracy-score" id="speakWordCount">0</div>
-          <div class="transcript-text" id="speakTranscript">—</div>
-          <button class="speak-btn btn-record" style="margin-top:14px;width:100%;justify-content:center" onclick="nextTopic(${topics.length})">Next →</button>
-        </div>`;
-    }
-
-    window.startTopicSpeech = function() {
-      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        alert('Use Google Chrome for speech recognition.'); return;
-      }
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SR();
-      recognition.lang = 'en-US';
-      recognition.interimResults = true;
-      recognition.continuous = true;
-      document.getElementById('speakRecInd').classList.add('active');
-      document.getElementById('speakBtn').style.display = 'none';
-      document.getElementById('stopSpeakBtn').style.display = 'flex';
-      let fullText = '';
-      recognition.onresult = e => {
-        fullText = Array.from(e.results).map(r=>r[0].transcript).join('');
-      };
-      recognition.onend = () => {
-        document.getElementById('speakRecInd').classList.remove('active');
-        const words = fullText.trim().split(/\s+/).filter(w=>w.length>0).length;
-        document.getElementById('speakAccBox').style.display = 'block';
-        document.getElementById('speakWordCount').textContent = words + ' words';
-        document.getElementById('speakTranscript').textContent = fullText.trim() || '(no speech detected)';
-        if (words >= 15) totalScore += 10;
-      };
-      recognition.start();
-    };
-    window.stopTopicSpeech = function() { if (recognition) recognition.stop(); document.getElementById('stopSpeakBtn').style.display='none'; document.getElementById('speakBtn').style.display='flex'; };
-    window.nextTopic = function(total) {
-      commIdx++;
-      if (commIdx >= total) { stage=3; renderStage(); }
-      else showSpeakingItem(document.getElementById('contentArea'), modData.englishData.topics);
-    };
-
-    // ── EVAL ──
-    function renderEval(ca) {
-      ca.innerHTML = `
-        <div class="teach-title" style="color:var(--green)">Submitting Results…</div>
-        <div class="teach-exp">Our AI engine is analyzing your performance and updating your learning path.</div>`;
-      nextBtn.style.display = 'none';
-      submitEvaluation();
-    }
-
-    async function submitEvaluation() {
-      let pct = Math.round((totalScore / (maxScore||1))*100);
-      if (isNaN(pct) || maxScore===0) pct = 100;
       try {
-        const res = await fetch('http://localhost:8080/api/submit', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({user,course:courseId,level:levelId,type:'module-complete',score:String(pct)})
+        const response = await fetch("http://localhost:5001/run-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ code, language })
         });
-        const data = await res.json();
-        localStorage.setItem('ailearn_score', data.score);
-        localStorage.setItem('ailearn_recommendation', data.recommendation);
-        localStorage.setItem('ailearn_course', courseId);
-        localStorage.setItem('ailearn_level', levelId);
-        window.location.href = 'result.html';
-      } catch(err) {
-        document.getElementById('contentArea').innerHTML += `<div style="color:var(--red);margin-top:20px">⚠ Submission failed. Check server connection.</div>`;
+
+        if (!response.ok) {
+          throw new Error("Server not responding");
+        }
+
+        const result = await response.json();
+
+        out.innerText = "Output: " + result.output;
+
+        if (result.success) {
+          res.innerText = "✅ Passed";
+          res.className = "out-msg out-succ";
+          sBtn.disabled = false;
+          codePassed = true;
+        } else {
+          res.innerText = "❌ Failed";
+          res.className = "out-msg out-err";
+          codePassed = false;
+        }
+
+      } catch (err) {
+        console.error(err);
+        out.innerText = "❌ Server Error";
+        res.innerText = "Check backend";
+        res.className = "out-msg out-err";
       }
     }
 
-    function handleNext() {
-      if (stage===0) { stage=1; pracIdx=0; renderStage(); }
-      else if (stage===1) {
-        pracIdx++;
-        if (pracIdx >= modData.practice.length) { stage=2; codeIdx=0; commIdx=0; renderStage(); }
-        else renderStage();
+    // ================= SUBMIT =================
+    function submitCode() {
+      if (!codePassed) return;
+
+      const out = document.getElementById('conOut');
+      out.innerText = "Checking final results...";
+
+      setTimeout(() => {
+        score += 25;
+
+        if (currentCodeQ < data.coding.length - 1) {
+          currentCodeQ++;
+          loadCoding();
+        } else {
+          nextPhase();
+          calculateResult();
+        }
+      }, 1000);
+    }
+
+    // ================= RESULT =================
+    function calculateResult() {
+      const pct = Math.min(100, score);
+      
+      const courseKey = course.toLowerCase();
+      document.getElementById('resScore').innerText = pct + "%";
+
+      let title = "Beginner";
+      let msg = "Start with basics.";
+
+      if (pct >= 80) {
+        title = "Expert";
+        msg = "Excellent! Level Mastery Achieved.";
+        
+        console.log("Saving Mapping:", `${courseKey}_level_${level}`);
+        localStorage.setItem(`${courseKey}_level_${level}`, "completed");
+      } else if (pct > 50) {
+        title = "Intermediate";
+        msg = "Good progress! Keep practicing.";
       }
+
+      document.getElementById('resTitle').innerText = "Evaluation: " + title;
+      document.getElementById('resMsg').innerText = msg;
     }
 
-    // ── ACCURACY HELPERS ──
-    function calcAccuracy(spoken, expected) {
-      const s = spoken.toLowerCase().replace(/[.,!?]/g,'').split(/\s+/).filter(w=>w);
-      const e = expected.toLowerCase().replace(/[.,!?]/g,'').split(/\s+/).filter(w=>w);
-      if (!e.length) return 0;
-      let match = 0;
-      s.forEach(w => { if(e.includes(w)) match++; });
-      return Math.min(100, Math.round((match/e.length)*100));
+    function finishLevel() {
+      window.location.href = `levels.html?course=${course.toLowerCase()}`;
     }
 
-    function showAccuracy(acc, transcript) {
-      const box = document.getElementById('accBox');
-      box.style.display = 'block';
-      const bar = document.getElementById('accBar');
-      document.getElementById('accScore').textContent = acc + '%';
-      document.getElementById('transText').textContent = transcript;
-      document.getElementById('accEmoji').textContent = acc>=80?'🎉':acc>=50?'👍':'💪';
-      bar.style.width = acc+'%';
-      bar.style.background = acc>=80?'var(--green)':acc>=50?'var(--amber)':'var(--red)';
-      if (acc >= 60) totalScore += 10;
-    }
-
-    function htmlEsc(s) {
-      if (!s) return '';
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    loadModule();
+    init();
   </script>
 </body>
+
 </html>

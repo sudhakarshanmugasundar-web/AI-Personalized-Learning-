@@ -66,6 +66,16 @@ echo "   → Open: http://localhost:$PORT/frontend/index.html"
 echo "   → Or:   file://$(pwd)/frontend/index.html"
 echo ""
 
-# ── 5. Start the server (pass API key as JVM system property as backup) ───
+# ── 5. Start Node.js AI Backend in Background ────────────────
+echo "🤖 Starting AI Backend (Node.js) on port 5001..."
+/usr/local/bin/node backend/server.js > node_server.log 2>&1 &
+NODE_PID=$!
+echo "   → Node.js PID: $NODE_PID"
+
+# ── 6. Start Java Server (Main Platform) ─────────────────────
+echo "☕ Starting Java Server on port $PORT..."
 OPENAI_API_KEY="$OPENAI_API_KEY" java -cp bin Server
+
+# Cleanup Node on exit
+kill $NODE_PID
 

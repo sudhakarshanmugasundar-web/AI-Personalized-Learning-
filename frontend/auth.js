@@ -8,7 +8,7 @@ const AUTH = {
   USER_KEY:    'ailearn_user',
   EMAIL_KEY:   'ailearn_email',
   PICTURE_KEY: 'ailearn_picture',
-  BACKEND:     'http://localhost:8080',
+  BACKEND:     'http://localhost:5001',
 
   /** Save session after successful login */
   saveSession(token, name, email, picture) {

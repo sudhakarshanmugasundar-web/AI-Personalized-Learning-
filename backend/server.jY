@@ -1,0 +1,29 @@
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("AI Backend Running 🚀");
+});
+
+app.post("/chat", (req, res) => {
+  const message = req.body.message || "";
+
+  if (message.toLowerCase() === "hi") {
+    return res.json({
+      reply: "Hello! Ready to improve your skills today? 📚"
+    });
+  }
+
+  res.json({
+    reply: "Based on your progress, I suggest practicing weak topics 🔥"
+  });
+});
+
+app.listen(5000, () => {
+  console.log("Server running on http://localhost:5000");
+});
+

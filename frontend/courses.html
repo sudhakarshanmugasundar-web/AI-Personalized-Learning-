@@ -1,287 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Courses – AI Personalized Learning</title>
-  <meta name="description" content="Select a course to begin your learning journey.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
+  <title>Course Catalog | AI Genius</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0a0a0c; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; }
 
-    :root {
-      --bg-grad: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #1a1a3e 100%);
-      --accent: #6c63ff;
-      --accent-light: #8b85ff;
-      --sky: #38bdf8;
-      --green: #22c55e;
-      --python-yellow: #facc15;
-      --java-orange: #f97316;
-      --card-bg: rgba(255,255,255,0.06);
-      --card-border: rgba(255,255,255,0.11);
-      --text: #ffffff;
-      --text-muted: rgba(255,255,255,0.55);
-    }
+    .header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px; }
+    h1 { font-size: 2.22rem; font-weight: 800; }
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      background: var(--bg-grad);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 20px;
-    }
-
-    /* Orbs */
-    .orb {
-      position: fixed; border-radius: 50%; filter: blur(80px);
-      pointer-events: none; z-index: 0;
-      animation: drift 12s ease-in-out infinite;
-    }
-    .orb-1 { width: 500px; height: 500px; top: -150px; left: -100px;
-              background: radial-gradient(circle, rgba(108,99,255,0.3) 0%, transparent 70%); }
-    .orb-2 { width: 380px; height: 380px; bottom: -100px; right: -80px;
-              background: radial-gradient(circle, rgba(56,189,248,0.2) 0%, transparent 70%);
-              animation-direction: reverse; animation-duration: 14s; }
-    @keyframes drift {
-      0%, 100% { transform: translate(0,0) scale(1); }
-      50%       { transform: translate(20px,-30px) scale(1.04); }
-    }
-
-    /* Header */
-    .page-header {
-      width: 100%; max-width: 1000px;
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 28px;
-      margin-top: 20px;
-      position: relative; z-index: 1;
-      animation: fadeDown 0.6s ease-out both;
-    }
-    .page-header a {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.875rem; font-weight: 600;
-      color: var(--text-muted); text-decoration: none;
-      transition: color 0.2s;
-    }
-    .page-header a:hover { color: var(--text); }
-    .page-header .user-badge {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--card-border);
-      border-radius: 100px; padding: 6px 14px;
-      font-size: 0.8rem; color: var(--text-muted);
-    }
-
-    .header-text {
-      text-align: center;
-      margin-bottom: 40px;
-      position: relative;
-      z-index: 1;
-      animation: fadeUp 0.6s ease-out both;
-    }
-    .header-text h1 {
-      font-size: clamp(2rem, 4vw, 2.5rem);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 10px;
-    }
-    .header-text p {
-      color: var(--text-muted);
-      font-size: 1.05rem;
-    }
-
-    /* Courses Grid */
-    .courses-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 24px;
-      width: 100%;
-      max-width: 1000px;
-      position: relative;
-      z-index: 1;
-      animation: fadeUp 0.8s ease-out both;
-    }
-
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 1000px; }
+    
     .course-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
-      border: 1px solid var(--card-border);
-      border-radius: 22px;
-      padding: 32px;
-      text-decoration: none;
-      color: var(--text);
-      transition: transform 0.3s cubic-bezier(.175,.885,.32,1.275), border-color 0.3s, box-shadow 0.3s;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; padding: 32px;
+      text-decoration: none; color: inherit; transition: 0.3s; display: flex; flex-direction: column; gap: 16px;
     }
-    .course-card:hover { 
-      transform: translateY(-8px) scale(1.01); 
-      border-color: rgba(108,99,255,0.5);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 0 0 1px rgba(108,99,255,0.2);
-    }
-    .course-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(56,189,248,0.06));
-      opacity: 0; transition: opacity 0.35s;
-    }
-    .course-card:hover::before { opacity: 1; }
-    .course-card::after {
-      content: ''; position: absolute;
-      top: -2px; left: 10%; right: 10%; height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(108,99,255,0.7), transparent);
-      opacity: 0; transition: opacity 0.35s; border-radius: 100px;
-    }
-    .course-card:hover::after { opacity: 1; }
+    .course-card:hover { transform: translateY(-8px); border-color: #8b5cf6; background: rgba(139, 92, 246, 0.03); }
+    
+    .icon { width: 56px; height: 56px; background: rgba(139, 92, 246, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+    h3 { font-size: 1.3rem; font-weight: 800; }
+    p { color: rgba(255,255,255,0.5); font-size: 0.95rem; line-height: 1.5; }
 
-    .course-icon {
-      width: 60px; height: 60px;
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 30px; margin-bottom: 20px;
-    }
-    .icon-english { background: rgba(108,99,255,0.2); }
-    .icon-java    { background: rgba(249,115,22,0.2); }
-    .icon-python  { background: rgba(250,204,21,0.2); }
-
-    .course-title {
-      font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;
-    }
-    .course-desc {
-      font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;
-      margin-bottom: 24px; flex-grow: 1;
-    }
-    .course-topics {
-      font-size: 0.8rem; color: rgba(255,255,255,0.7);
-      background: rgba(255,255,255,0.05); padding: 12px;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
-      margin-bottom: 20px;
-    }
-    .course-topics ul {
-      margin-left: 20px; margin-top: 6px;
-    }
-    .course-topics li { margin-bottom: 4px; }
-
-    .btn-start {
-      width: 100%; padding: 14px;
-      background: rgba(255,255,255,0.1);
-      color: #fff; border: none; border-radius: 12px;
-      font-size: 0.95rem; font-weight: 600;
-      transition: background 0.2s, color 0.2s;
-      text-align: center; display: inline-block; text-decoration: none;
-    }
-    .course-card:hover .btn-start {
-      background: var(--accent);
-    }
-
-    /* Animations */
-    @keyframes fadeDown { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
-
-    /* Responsive */
-    @media (max-width: 480px) {
-      body { padding: 16px; justify-content: flex-start; padding-top: 30px; }
-      .header-text h1 { font-size: 1.8rem; }
-    }
+    .btn { background: #8b5cf6; color: #white; text-align: center; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 0.85rem; margin-top: auto; }
   </style>
 </head>
-
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
 
-  <!-- Header -->
-  <div class="page-header">
-    <a href="index.html">← Home</a>
-    <a href="profile.html" style="text-decoration:none;">
-      <div class="user-badge" style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(108,99,255,0.25); border-radius:100px; padding:6px 14px 6px 6px; font-size:0.8rem; color:var(--text-muted); transition:background .2s;">
-        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6c63ff,#38bdf8);display:flex;align-items:center;justify-content:center;font-size:14px;">🎓</div>
-        <span id="userName">Student</span>
-      </div>
-    </a>
+  <div class="header">
+    <h1>Advanced Pathways</h1>
+    <a href="profile.html" style="color:rgba(255,255,255,0.5); text-decoration:none; font-weight:700;">DASHBOARD</a>
   </div>
 
-  <div class="header-text">
-    <h1>Select a Course</h1>
-    <p>Choose your pathway to level up your skills</p>
-  </div>
-
-  <!-- Courses Grid -->
-  <div class="courses-grid">
-    
-    <a href="levels.html?course=english" class="course-card">
-      <div class="course-icon icon-english">🗣️</div>
-      <h2 class="course-title">Spoken English</h2>
-      <p class="course-desc">Master the basics of conversational English for everyday life and professional settings.</p>
-      <div class="course-topics">
-        <strong>Structured Levels:</strong>
-        <ul>
-          <li>L1: Reading Sentences</li>
-          <li>L2: Fill in the Blanks</li>
-          <li>L3: Listening & Repeating</li>
-          <li>L4: Topic Speaking</li>
-          <li>L5: Interview Practice</li>
-        </ul>
-      </div>
-      <div class="btn-start">View Levels →</div>
-    </a>
-
+  <div class="grid">
     <a href="levels.html?course=java" class="course-card">
-      <div class="course-icon icon-java">☕</div>
-      <h2 class="course-title">Java Programming</h2>
-      <p class="course-desc">From beginner concepts to advanced object-oriented programming principles.</p>
-      <div class="course-topics">
-        <strong>Structured Levels:</strong>
-        <ul>
-          <li>L1: Input/Output</li>
-          <li>L2: Variables & Data Types</li>
-          <li>L3: Strings</li>
-          <li>L4: Loops</li>
-          <li>L5: Arrays</li>
-          <li>L6: OOP Concepts</li>
-          <li>L7: Mastery</li>
-        </ul>
-      </div>
-      <div class="btn-start">View Levels →</div>
+      <div class="icon">☕</div>
+      <h3>Java Programming</h3>
+      <p>Master OOP, JVM, and enterprise architecture with Java v21.</p>
+      <div class="btn">Enter Pathway →</div>
     </a>
-
     <a href="levels.html?course=python" class="course-card">
-      <div class="course-icon icon-python">🐍</div>
-      <h2 class="course-title">Python Programming</h2>
-      <p class="course-desc">Learn the world's most popular language from absolute basics to advanced topics.</p>
-      <div class="course-topics">
-        <strong>Structured Levels:</strong>
-        <ul>
-          <li>L1: Python Basics</li>
-          <li>L2: Input/Output</li>
-          <li>L3: Loops</li>
-          <li>L4: Lists</li>
-          <li>L5: Functions</li>
-          <li>L6: OOP Concepts</li>
-        </ul>
-      </div>
-      <div class="btn-start">View Levels →</div>
+      <div class="icon">🐍</div>
+      <h3>Python Mastery</h3>
+      <p>Dive into AI, Data Science, and rapid scripting logic.</p>
+      <div class="btn">Enter Pathway →</div>
     </a>
-
+    <a href="levels.html?course=dsa" class="course-card">
+      <div class="icon">🏗️</div>
+      <h3>DSA (Advanced)</h3>
+      <p>Master algorithmic efficiency and complex data structures.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=c" class="course-card">
+      <div class="icon">⚙️</div>
+      <h3>C Language</h3>
+      <p>Understand memory management and procedural engineering.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=cpp" class="course-card">
+      <div class="icon">👾</div>
+      <h3>C++ OOP</h3>
+      <p>High-performance systems and advanced pointer logic.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=machine_learning" class="course-card">
+      <div class="icon">🤖</div>
+      <h3>Machine Learning</h3>
+      <p>Neural networks, regression, and model evaluation techniques.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=communication" class="course-card">
+      <div class="icon">🗣️</div>
+      <h3>Communication</h3>
+      <p>Polish your soft skills and professional verbal dynamics.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=dbms" class="course-card">
+      <div class="icon">🗄️</div>
+      <h3>DBMS</h3>
+      <p>SQL mastery, normalization, and database architecture.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
+    <a href="levels.html?course=operating_systems" class="course-card">
+      <div class="icon">💻</div>
+      <h3>Operating Systems</h3>
+      <p>Kernel basics, process management, and memory paging.</p>
+      <div class="btn">Enter Pathway →</div>
+    </a>
   </div>
 
-  <script>
-    // Show username
-    const user = localStorage.getItem('ailearn_user') || 'Student';
-    document.getElementById('userName').textContent = user;
-
-    // Auth guard
-    if (!localStorage.getItem('ailearn_loggedIn')) {
-      window.location.href = 'login.html';
-    }
-  </script>
-  <script src="chatbot.js"></script>
 </body>
 </html>
